@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import { AppModule } from './app.module'
+import { TransformInterceptor } from './common/interceptors/transform.interceptor'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
@@ -17,6 +18,8 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   )
+
+  app.useGlobalInterceptors(new TransformInterceptor())
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('APQP Project Management System')
