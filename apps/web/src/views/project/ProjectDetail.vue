@@ -5,6 +5,7 @@
       <div>
         <el-tag :type="statusType(project?.status)" size="large">{{ statusLabel(project?.status) }}</el-tag>
         <el-button style="margin-left: 12px" @click="$router.push(`/projects/${project?.id}/schedule`)">进度计划</el-button>
+        <el-button @click="$router.push(`/projects/${project?.id}/risks`)">风险管理</el-button>
         <el-button @click="$router.push('/projects')">返回列表</el-button>
       </div>
     </div>
