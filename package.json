@@ -1,0 +1,19 @@
+{
+  "name": "apqp-system",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "dev:server": "pnpm --filter server run dev",
+    "dev:web": "pnpm --filter web run dev",
+    "build": "pnpm --filter web run build",
+    "db:migrate": "pnpm --filter server run db:migrate",
+    "db:seed": "pnpm --filter server run db:seed",
+    "db:studio": "pnpm --filter server run db:studio",
+    "lint": "eslint . --ext .ts,.vue",
+    "format": "prettier --write \"**/*.{ts,vue,json,md}\""
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

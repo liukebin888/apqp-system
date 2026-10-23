@@ -1,0 +1,738 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Layer 4: System Foundation
+// ============================================================
+
+model SysDepartment {
+  id        Int       @id @default(autoincrement()) @db.UnsignedInt
+  name      String    @db.VarChar(100)
+  code      String    @unique @db.VarChar(50)
+  parentId  Int?      @db.UnsignedInt
+  sortOrder Int       @default(0)
+  leaderId  Int?      @db.UnsignedInt
+  status    Int       @default(1) @db.TinyInt // 1=active, 0=disabled
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  parent   SysDepartment?  @relation("DeptTree", fields: [parentId], references: [id])
+  children SysDepartment[] @relation("DeptTree")
+  users    SysUser[]
+  positions SysPosition[]
+  leader   SysUser?        @relation("DepartmentLeader", fields: [leaderId], references: [id])
+
+  @@map("sys_departments")
+}
+
+model SysPosition {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  name         String    @db.VarChar(100)
+  departmentId Int?      @db.UnsignedInt
+  category     String    @default("general") @db.VarChar(20) // hardware/software/general
+  createdAt    DateTime  @default(now())
+
+  department SysDepartment? @relation(fields: [departmentId], references: [id])
+  users      SysUser[]
+
+  @@map("sys_positions")
+}
+
+model SysUser {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  username     String    @unique @db.VarChar(50)
+  passwordHash String    @db.VarChar(255)
+  realName     String    @db.VarChar(50)
+  email        String?   @db.VarChar(100)
+  phone        String?   @db.VarChar(20)
+  avatar       String?   @db.VarChar(255)
+  departmentId Int?      @db.UnsignedInt
+  positionId   Int?      @db.UnsignedInt
+  status       Int       @default(1) @db.TinyInt // 1=active, 0=disabled, 2=resigned
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  department SysDepartment? @relation(fields: [departmentId], references: [id])
+  position   SysPosition?   @relation(fields: [positionId], references: [id])
+  userRoles  SysUserRole[]
+  auditLogs  SysAuditLog[]
+  ledDepartments SysDepartment[] @relation("DepartmentLeader")
+  projectTeams   PrjProjectTeam[]
+  riskResponses  PrjRiskResponse[]
+  ownedRisks     PrjRisk[]
+  managedProjects PrjProject[]    @relation("ProjectManager")
+
+  @@map("sys_users")
+}
+
+model SysRole {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  code        String    @unique @db.VarChar(50)
+  name        String    @db.VarChar(100)
+  description String?   @db.VarChar(255)
+  isSystem    Boolean   @default(false) // system roles cannot be deleted
+  createdAt   DateTime  @default(now())
+
+  userRoles       SysUserRole[]
+  rolePermissions SysRolePermission[]
+
+  @@map("sys_roles")
+}
+
+model SysPermission {
+  id     Int    @id @default(autoincrement()) @db.UnsignedInt
+  code   String @unique @db.VarChar(100) // format: module:resource:action
+  name   String @db.VarChar(100)
+  module String @db.VarChar(50)
+
+  rolePermissions SysRolePermission[]
+
+  @@map("sys_permissions")
+}
+
+model SysUserRole {
+  userId Int @db.UnsignedInt
+  roleId Int @db.UnsignedInt
+
+  user SysUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role SysRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("sys_user_roles")
+}
+
+model SysRolePermission {
+  roleId       Int @db.UnsignedInt
+  permissionId Int @db.UnsignedInt
+
+  role       SysRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission SysPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("sys_role_permissions")
+}
+
+model SysSequence {
+  seqName    String @id @db.VarChar(50)
+  currentVal Int    @default(0)
+  prefix     String @default("") @db.VarChar(10)
+  dateFormat String? @db.VarChar(20) // e.g. "YYYYMMDD"
+
+  @@map("sys_sequences")
+}
+
+model SysConfig {
+  configKey   String  @id @db.VarChar(100)
+  configValue String? @db.Text
+  description String? @db.VarChar(255)
+
+  @@map("sys_configs")
+}
+
+model SysAuditLog {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  userId         Int       @db.UnsignedInt
+  action         String    @db.VarChar(50) // CREATE/UPDATE/DELETE/APPROVE/REJECT/EXPORT/LOGIN
+  module         String    @db.VarChar(50)
+  resourceType   String    @db.VarChar(50)
+  resourceId     String?   @db.VarChar(50)
+  beforeSnapshot Json?
+  afterSnapshot  Json?
+  ipAddress      String?   @db.VarChar(50)
+  userAgent      String?   @db.VarChar(500)
+  createdAt      DateTime  @default(now())
+
+  user SysUser @relation(fields: [userId], references: [id])
+
+  @@index([module, resourceType, resourceId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("sys_audit_logs")
+}
+
+// ============================================================
+// Layer 4: Master Data
+// ============================================================
+
+model MdCustomer {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  customerCode String    @unique @db.VarChar(50)
+  customerName String    @db.VarChar(200)
+  contactName  String?   @db.VarChar(50)
+  contactPhone String?   @db.VarChar(20)
+  contactEmail String?   @db.VarChar(100)
+  industry     String?   @db.VarChar(50)
+  oemType      String?   @db.VarChar(50) // OEM/Tier1/Tier2
+  address      String?   @db.VarChar(500)
+  status       Int       @default(1) @db.TinyInt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  products MdProduct[]
+  projects PrjProject[]
+
+  @@map("md_customers")
+}
+
+model MdProductCategory {
+  id       Int    @id @default(autoincrement()) @db.UnsignedInt
+  name     String @db.VarChar(100)
+  parentId Int?   @db.UnsignedInt
+  level    Int    @default(1) @db.TinyInt
+
+  parent   MdProductCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children MdProductCategory[] @relation("CategoryTree")
+  products MdProduct[]
+
+  @@map("md_product_categories")
+}
+
+model MdProduct {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  productCode String    @unique @db.VarChar(50)
+  productName String    @db.VarChar(200)
+  categoryId  Int?      @db.UnsignedInt
+  customerId  Int?      @db.UnsignedInt
+  productForm String    @default("hardware") @db.VarChar(20) // hardware/software/hybrid
+  specs       String?   @db.VarChar(500)
+  status      Int       @default(1) @db.TinyInt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  category MdProductCategory? @relation(fields: [categoryId], references: [id])
+  customer MdCustomer?        @relation(fields: [customerId], references: [id])
+  projects PrjProject[]
+
+  @@map("md_products")
+}
+
+model MdSupplier {
+  id                 Int       @id @default(autoincrement()) @db.UnsignedInt
+  supplierCode       String    @unique @db.VarChar(50)
+  supplierName       String    @db.VarChar(200)
+  creditCode         String?   @unique @db.VarChar(50) // unified social credit code
+  contactName        String?   @db.VarChar(50)
+  contactPhone       String?   @db.VarChar(20)
+  contactEmail       String?   @db.VarChar(100)
+  address            String?   @db.VarChar(500)
+  qualificationStatus String?  @db.VarChar(20) // qualified/probation/blacklisted
+  rating             String?   @db.VarChar(10) // A/B/C/D
+  status             Int       @default(1) @db.TinyInt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  documents MdSupplierDocument[]
+  ratings   MdSupplierRating[]
+
+  @@map("md_suppliers")
+}
+
+model MdSupplierDocument {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  supplierId Int       @db.UnsignedInt
+  docType    String    @db.VarChar(50)
+  fileName   String    @db.VarChar(255)
+  filePath   String    @db.VarChar(500)
+  expireDate DateTime?
+  createdAt  DateTime  @default(now())
+
+  supplier MdSupplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@map("md_supplier_documents")
+}
+
+model MdSupplierRating {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  supplierId   Int       @db.UnsignedInt
+  qualityScore Decimal   @db.Decimal(5, 2)
+  deliveryScore Decimal  @db.Decimal(5, 2)
+  serviceScore Decimal   @db.Decimal(5, 2)
+  priceScore   Decimal   @db.Decimal(5, 2)
+  period       String    @db.VarChar(20) // e.g. "2026-Q1"
+  createdAt    DateTime  @default(now())
+
+  supplier MdSupplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@map("md_supplier_ratings")
+}
+
+// ============================================================
+// Layer 4: Workflow Engine
+// ============================================================
+
+model WfDefinition {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  code           String    @unique @db.VarChar(50)
+  name           String    @db.VarChar(100)
+  bizType        String    @db.VarChar(50) // e.g. project_initiation, ecr, ecn, purchase_order
+  version        Int       @default(1)
+  status         String    @default("draft") @db.VarChar(20) // draft/active/deprecated
+  definitionJson Json?     // full flow diagram (BPMN-lite subset)
+  createdById    Int       @db.UnsignedInt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  nodeDefinitions WfNodeDefinition[]
+  transitions     WfTransition[]
+  instances       WfInstance[]
+
+  @@map("wf_definitions")
+}
+
+model WfNodeDefinition {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  definitionId   Int       @db.UnsignedInt
+  nodeKey        String    @db.VarChar(50)
+  nodeName       String    @db.VarChar(100)
+  nodeType       String    @db.VarChar(20) // start/end/approval/countersign/condition/auto/notify
+  assigneeType   String?   @db.VarChar(20) // role/user/department/initiator/dynamic
+  assigneeValue  Json?     // specific value or expression
+  propertiesJson Json?     // timeout settings, form field visibility, condition expressions
+  sortOrder      Int       @default(0)
+
+  definition WfDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+
+  @@unique([definitionId, nodeKey])
+  @@map("wf_node_definitions")
+}
+
+model WfTransition {
+  id                  Int       @id @default(autoincrement()) @db.UnsignedInt
+  definitionId        Int       @db.UnsignedInt
+  fromNodeKey         String    @db.VarChar(50)
+  toNodeKey           String    @db.VarChar(50)
+  conditionExpression String?   @db.VarChar(500) // empty = default path
+  priority            Int       @default(0)
+
+  definition WfDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+
+  @@map("wf_transitions")
+}
+
+model WfInstance {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  definitionId    Int       @db.UnsignedInt
+  bizType         String    @db.VarChar(50)
+  bizId           Int       @db.UnsignedInt
+  bizNo           String?   @db.VarChar(50)
+  title           String    @db.VarChar(200)
+  initiatorId     Int       @db.UnsignedInt
+  status          String    @default("running") @db.VarChar(20) // running/completed/rejected/cancelled/suspended
+  currentNodesJson Json?    // JSON array of current active node keys
+  variablesJson   Json?     // process variables for condition evaluation
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  definition   WfDefinition      @relation(fields: [definitionId], references: [id])
+  nodeInstances WfNodeInstance[]
+  logs          WfLog[]
+  rollbacks     WfRollback[]
+
+  @@index([bizType, bizId])
+  @@index([initiatorId])
+  @@map("wf_instances")
+}
+
+model WfNodeInstance {
+  id                Int       @id @default(autoincrement()) @db.UnsignedInt
+  instanceId        Int       @db.UnsignedInt
+  nodeKey           String    @db.VarChar(50)
+  nodeName          String    @db.VarChar(100)
+  nodeType          String    @db.VarChar(20)
+  assigneeUserId    Int?      @db.UnsignedInt
+  status            String    @default("pending") @db.VarChar(20) // pending/approved/rejected/skipped/countersigned
+  opinion           String?   @db.Text
+  actedBy           Int?      @db.UnsignedInt
+  actedAt           DateTime?
+  countersignTotal  Int       @default(0)
+  countersignDone   Int       @default(0)
+  parentNodeInstId  Int?      @db.UnsignedInt
+
+  instance WfInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId])
+  @@index([assigneeUserId, status])
+  @@map("wf_node_instances")
+}
+
+model WfLog {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  instanceId     Int       @db.UnsignedInt
+  nodeInstanceId Int?      @db.UnsignedInt
+  action         String    @db.VarChar(30) // submit/approve/reject/countersign/rollback/resubmit/timeout/transfer
+  operatorId     Int       @db.UnsignedInt
+  opinion        String?   @db.Text
+  createdAt      DateTime  @default(now())
+
+  instance WfInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId])
+  @@map("wf_logs")
+}
+
+model WfRollback {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  instanceId  Int       @db.UnsignedInt
+  fromNodeKey String    @db.VarChar(50)
+  toNodeKey   String    @db.VarChar(50)
+  reason      String?   @db.Text
+  operatorId  Int       @db.UnsignedInt
+  createdAt   DateTime  @default(now())
+
+  instance WfInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@map("wf_rollbacks")
+}
+
+// ============================================================
+// Layer 4: Notification & Alert
+// ============================================================
+
+model MsgNotification {
+  id        Int       @id @default(autoincrement()) @db.UnsignedInt
+  userId    Int       @db.UnsignedInt
+  type      String    @db.VarChar(30) // task/approval/alert/system
+  title     String    @db.VarChar(200)
+  content   String?   @db.Text
+  bizType   String?   @db.VarChar(50)
+  bizId     Int?      @db.UnsignedInt
+  isRead    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@index([userId, isRead])
+  @@map("msg_notifications")
+}
+
+model MsgAlertRule {
+  id               Int       @id @default(autoincrement()) @db.UnsignedInt
+  name             String    @db.VarChar(100)
+  module           String    @db.VarChar(50)
+  triggerType      String    @db.VarChar(30) // schedule/risk/change/custom
+  conditionJson    Json?     // trigger condition expression
+  severity         String    @default("warning") @db.VarChar(20) // info/warning/critical
+  notifyChannelsJson Json?   // ["email","system","feishu"]
+  notifyTargetsJson  Json?   // roles/users/department leaders
+  isActive         Boolean   @default(true)
+  createdById      Int       @db.UnsignedInt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@map("msg_alert_rules")
+}
+
+model MsgAlertRecord {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  ruleId         Int?      @db.UnsignedInt
+  targetBizType  String?   @db.VarChar(50)
+  targetBizId    Int?      @db.UnsignedInt
+  severity       String    @db.VarChar(20)
+  title          String    @db.VarChar(200)
+  content        String?   @db.Text
+  status         String    @default("triggered") @db.VarChar(20) // triggered/acknowledged/resolved/dismissed
+  triggeredAt    DateTime  @default(now())
+  acknowledgedBy Int?      @db.UnsignedInt
+  acknowledgedAt DateTime?
+  resolvedAt     DateTime?
+
+  @@index([status, severity])
+  @@map("msg_alert_records")
+}
+
+model MsgEmailQueue {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  toAddress  String    @db.VarChar(200)
+  subject    String    @db.VarChar(500)
+  bodyHtml   String    @db.Text
+  status     String    @default("pending") @db.VarChar(20) // pending/sent/failed
+  retryCount Int       @default(0)
+  sentAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([status])
+  @@map("msg_email_queue")
+}
+
+// ============================================================
+// Layer 2: APQP Project Main Line - Project Management
+// ============================================================
+
+model PrjProject {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectCode     String    @unique @db.VarChar(50)
+  projectName     String    @db.VarChar(200)
+  customerId      Int?      @db.UnsignedInt
+  productId       Int?      @db.UnsignedInt
+  projectLevel    String    @db.VarChar(10) // L1-L5
+  status          String    @default("draft") @db.VarChar(20) // draft/active/on_hold/completed/cancelled
+  managerId       Int?      @db.UnsignedInt
+  startDate       DateTime?
+  endDate         DateTime?
+  apqpPhase       Int       @default(1) @db.TinyInt // 1-5 APQP phases
+  description     String?   @db.Text
+  workflowInstanceId Int?    @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  customer     MdCustomer?       @relation(fields: [customerId], references: [id])
+  product      MdProduct?        @relation(fields: [productId], references: [id])
+  manager      SysUser?          @relation("ProjectManager", fields: [managerId], references: [id])
+  teams        PrjProjectTeam[]
+  schedules    PrjSchedule[]
+  milestones   PrjMilestone[]
+  risks        PrjRisk[]
+  costs        PrjCost[]
+  resources    PrjResource[]
+
+  @@index([status])
+  @@index([managerId])
+  @@map("prj_projects")
+}
+
+model PrjProjectTeam {
+  id        Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId Int       @db.UnsignedInt
+  userId    Int       @db.UnsignedInt
+  role      String    @db.VarChar(20) // pm/qe/pe/me/buyer
+  joinedAt  DateTime  @default(now())
+
+  project PrjProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    SysUser    @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+  @@map("prj_project_teams")
+}
+
+model PrjSchedule {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId      Int       @db.UnsignedInt
+  baselineVersion Int      @default(1)
+  startDate      DateTime?
+  endDate        DateTime?
+  status         String    @default("draft") @db.VarChar(20) // draft/active/archived
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  project PrjProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   PrjWbsTask[]
+
+  @@map("prj_schedules")
+}
+
+model PrjWbsTask {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  scheduleId    Int       @db.UnsignedInt
+  parentId      Int?      @db.UnsignedInt
+  taskCode      String    @db.VarChar(50)
+  taskName      String    @db.VarChar(200)
+  responsibleId Int?      @db.UnsignedInt
+  plannedStart  DateTime?
+  plannedEnd    DateTime?
+  actualStart   DateTime?
+  actualEnd     DateTime?
+  progressPct   Int       @default(0) @db.TinyInt
+  status        String    @default("pending") @db.VarChar(20) // pending/in_progress/completed/blocked/cancelled
+  milestoneFlag Boolean   @default(false)
+  sortOrder     Int       @default(0)
+
+  schedule     PrjSchedule      @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  parent       PrjWbsTask?      @relation("TaskTree", fields: [parentId], references: [id])
+  children     PrjWbsTask[]     @relation("TaskTree")
+  predecessors PrjTaskDependency[] @relation("Predecessor")
+  successors   PrjTaskDependency[] @relation("Successor")
+
+  @@index([scheduleId])
+  @@map("prj_wbs_tasks")
+}
+
+model PrjTaskDependency {
+  id             Int    @id @default(autoincrement()) @db.UnsignedInt
+  predecessorId  Int    @db.UnsignedInt
+  successorId    Int    @db.UnsignedInt
+  dependencyType String @default("FS") @db.VarChar(5) // FS/FF/SS/SF
+  lagDays        Int    @default(0)
+
+  predecessor PrjWbsTask @relation("Predecessor", fields: [predecessorId], references: [id], onDelete: Cascade)
+  successor   PrjWbsTask @relation("Successor", fields: [successorId], references: [id], onDelete: Cascade)
+
+  @@map("prj_task_dependencies")
+}
+
+model PrjMilestone {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId     Int       @db.UnsignedInt
+  milestoneType String    @db.VarChar(20) // gate1/gate2/gate3/gate4/gate5/ots/pvs/sop
+  name          String    @db.VarChar(200)
+  plannedDate   DateTime?
+  actualDate    DateTime?
+  status        String    @default("planned") @db.VarChar(20) // planned/completed/delayed
+  gateReviewId  Int?      @db.UnsignedInt
+
+  project PrjProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("prj_milestones")
+}
+
+model PrjRisk {
+  id               Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId        Int       @db.UnsignedInt
+  riskCode         String    @db.VarChar(50)
+  description      String    @db.Text
+  category         String    @db.VarChar(50) // technical/schedule/cost/supply/quality
+  probability      Int       @db.TinyInt // 1-5
+  impact           Int       @db.TinyInt // 1-5
+  riskLevel        String    @db.VarChar(10) // low/medium/high/critical
+  ownerUserId      Int?      @db.UnsignedInt
+  status           String    @default("open") @db.VarChar(20) // open/mitigating/closed/accepted
+  responseStrategy String?   @db.VarChar(20) // avoid/mitigate/transfer/accept
+  identifiedAt     DateTime  @default(now())
+  closedAt         DateTime?
+
+  project   PrjProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  owner     SysUser?          @relation(fields: [ownerUserId], references: [id])
+  responses PrjRiskResponse[]
+
+  @@index([projectId])
+  @@map("prj_risks")
+}
+
+model PrjRiskResponse {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  riskId        Int       @db.UnsignedInt
+  actionDesc    String    @db.Text
+  responsibleId Int?      @db.UnsignedInt
+  dueDate       DateTime?
+  status        String    @default("pending") @db.VarChar(20) // pending/in_progress/completed
+  createdAt     DateTime  @default(now())
+
+  risk        PrjRisk   @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  responsible SysUser?  @relation(fields: [responsibleId], references: [id])
+
+  @@map("prj_risk_responses")
+}
+
+model PrjCost {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId    Int       @db.UnsignedInt
+  budgetCategory String  @db.VarChar(50) // material/tooling/labor/external/other
+  budgetAmount Decimal   @default(0) @db.Decimal(12, 2)
+  actualAmount Decimal   @default(0) @db.Decimal(12, 2)
+  forecastAmount Decimal @default(0) @db.Decimal(12, 2)
+
+  project PrjProject     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  entries PrjCostEntry[]
+
+  @@map("prj_costs")
+}
+
+model PrjCostEntry {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  costId      Int       @db.UnsignedInt
+  entryDate   DateTime  @db.Date
+  amount      Decimal   @db.Decimal(12, 2)
+  description String?   @db.VarChar(500)
+  sourceType  String?   @db.VarChar(30) // po/invoice/timesheet/manual
+  sourceId    Int?      @db.UnsignedInt
+  createdAt   DateTime  @default(now())
+
+  cost PrjCost @relation(fields: [costId], references: [id], onDelete: Cascade)
+
+  @@map("prj_cost_entries")
+}
+
+model PrjResource {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId     Int       @db.UnsignedInt
+  userId        Int       @db.UnsignedInt
+  allocationPct Int       @default(0) @db.TinyInt // 0-100
+  startDate     DateTime?
+  endDate       DateTime?
+
+  project PrjProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("prj_resources")
+}
+
+model PrjWorkHour {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId   Int       @db.UnsignedInt
+  userId      Int       @db.UnsignedInt
+  workDate    DateTime  @db.Date
+  hours       Decimal   @db.Decimal(4, 1)
+  taskId      Int?      @db.UnsignedInt
+  description String?   @db.VarChar(500)
+  createdAt   DateTime  @default(now())
+
+  @@index([projectId, userId, workDate])
+  @@map("prj_work_hours")
+}
+
+// ============================================================
+// Layer 4: Document Management (shared across modules)
+// ============================================================
+
+model Document {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  docCode      String    @unique @db.VarChar(50)
+  docName      String    @db.VarChar(255)
+  docType      String    @db.VarChar(50) // FMEA/CP/PPAP/drawing/spec/report/other
+  bizType      String?   @db.VarChar(50)
+  bizId        Int?      @db.UnsignedInt
+  projectId    Int?      @db.UnsignedInt
+  version      String    @default("A") @db.VarChar(10)
+  revision     Int       @default(1)
+  status       String    @default("draft") @db.VarChar(20) // draft/in_review/approved/released/obsolete
+  storagePath  String?   @db.VarChar(500)
+  fileSize     Int?      @db.UnsignedInt
+  mimeType     String?   @db.VarChar(100)
+  checksumSha  String?   @db.VarChar(64)
+  isControlled Boolean   @default(false)
+  uploadedById Int       @db.UnsignedInt
+  approvedById Int?      @db.UnsignedInt
+  approvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  versions DocumentVersion[]
+  permissions DocumentPermission[]
+
+  @@index([projectId])
+  @@index([bizType, bizId])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id               Int       @id @default(autoincrement()) @db.UnsignedInt
+  documentId       Int       @db.UnsignedInt
+  version          String    @db.VarChar(10)
+  revision         Int       @default(1)
+  storagePath      String    @db.VarChar(500)
+  changeDescription String?  @db.VarChar(500)
+  createdById      Int       @db.UnsignedInt
+  createdAt        DateTime  @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("document_versions")
+}
+
+model DocumentPermission {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  documentId     Int       @db.UnsignedInt
+  granteeType    String    @db.VarChar(20) // user/role/department/project_team
+  granteeId      Int       @db.UnsignedInt
+  permissionLevel String   @db.VarChar(10) // view/download/edit/admin
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, granteeType, granteeId])
+  @@map("document_permissions")
+}
