@@ -7,10 +7,12 @@ import { ScheduleController } from './schedule.controller'
 import { ScheduleService } from './schedule.service'
 import { RiskController } from './risk.controller'
 import { RiskService } from './risk.service'
+import { MilestoneController } from './milestone.controller'
+import { MilestoneService } from './milestone.service'
 
 @Module({
-  controllers: [ProjectController, ScheduleController, RiskController],
-  providers: [PrismaService, SequenceService, ProjectService, ScheduleService, RiskService],
-  exports: [ProjectService, ScheduleService, RiskService],
+  controllers: [ProjectController, ScheduleController, RiskController, MilestoneController],
+  providers: [PrismaService, SequenceService, ProjectService, ScheduleService, RiskService, MilestoneService],
+  exports: [ProjectService, ScheduleService, RiskService, MilestoneService],
 })
 export class ProjectModule {}

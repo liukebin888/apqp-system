@@ -68,6 +68,13 @@ export const projectApi = {
   updateTeam: (id: number, members: any[]) => request.put(`/projects/${id}/team`, { members }),
 }
 
+export const milestoneApi = {
+  list: (projectId: number) => request.get(`/projects/${projectId}/milestones`),
+  create: (projectId: number, data: any) => request.post(`/projects/${projectId}/milestones`, data),
+  update: (projectId: number, id: number, data: any) => request.put(`/projects/${projectId}/milestones/${id}`, data),
+  delete: (projectId: number, id: number) => request.delete(`/projects/${projectId}/milestones/${id}`),
+}
+
 export const scheduleApi = {
   get: (projectId: number) => request.get(`/projects/${projectId}/schedule`),
   create: (projectId: number, data: any) => request.post(`/projects/${projectId}/schedule`, data),

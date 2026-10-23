@@ -96,6 +96,12 @@ const router = createRouter({
           component: () => import('@/views/project/RiskView.vue'),
           meta: { title: '风险管理', hidden: true },
         },
+        {
+          path: 'projects/:projectId/milestones',
+          name: 'ProjectMilestones',
+          component: () => import('@/views/project/MilestoneView.vue'),
+          meta: { title: '里程碑管理', hidden: true },
+        },
         // ---- 工作流 ----
         {
           path: 'workflow/approval-center',
