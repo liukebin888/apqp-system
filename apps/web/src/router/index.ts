@@ -84,6 +84,12 @@ const router = createRouter({
           component: () => import('@/views/project/ProjectDetail.vue'),
           meta: { title: '项目详情', hidden: true },
         },
+        {
+          path: 'projects/:projectId/schedule',
+          name: 'ProjectSchedule',
+          component: () => import('@/views/project/ScheduleView.vue'),
+          meta: { title: '进度计划', hidden: true },
+        },
         // ---- 工作流 ----
         {
           path: 'workflow/approval-center',
