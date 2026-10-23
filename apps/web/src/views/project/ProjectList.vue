@@ -75,7 +75,14 @@ onMounted(() => loadData())
 async function loadData() {
   loading.value = true
   try {
-    const res: any = await projectApi.list({ ...pagination, ...search })
+    const params: any = {
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+    }
+    if (search.keyword) params.keyword = search.keyword
+    if (search.status) params.status = search.status
+
+    const res: any = await projectApi.list(params)
     tableData.value = res.list
     pagination.total = res.total
   } finally { loading.value = false }
