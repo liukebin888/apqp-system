@@ -16,7 +16,7 @@
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="handleApprove(row)">通过</el-button>
           <el-button type="danger" link size="small" @click="handleReject(row)">驳回</el-button>
-          <el-button type="info" link size="small" @click="showDetail(row)">详情</el-button>
+          <el-button type="info" link size="small" @click="$router.push(`/workflow/instances/${row.instanceId}`)">详情</el-button>
         </template>
       </el-table-column>
     </el-table>

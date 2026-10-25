@@ -102,7 +102,19 @@ const router = createRouter({
           component: () => import('@/views/project/MilestoneView.vue'),
           meta: { title: '里程碑管理', hidden: true },
         },
+        {
+          path: 'projects/:projectId/requirements',
+          name: 'ProjectRequirements',
+          component: () => import('@/views/requirements/RequirementView.vue'),
+          meta: { title: 'A-SPICE 需求管理', hidden: true },
+        },
         // ---- 工作流 ----
+        {
+          path: 'workflow/definitions',
+          name: 'WorkflowDefinitions',
+          component: () => import('@/views/workflow/WorkflowDefinitionView.vue'),
+          meta: { title: '流程定义', icon: 'SetUp', group: 'workflow' },
+        },
         {
           path: 'workflow/approval-center',
           name: 'ApprovalCenter',
@@ -114,6 +126,82 @@ const router = createRouter({
           name: 'MyInitiated',
           component: () => import('@/views/workflow/MyInitiated.vue'),
           meta: { title: '我发起的', icon: 'Promotion', group: 'workflow' },
+        },
+        {
+          path: 'workflow/instances/:instanceId',
+          name: 'WorkflowInstance',
+          component: () => import('@/views/workflow/WorkflowInstanceView.vue'),
+          meta: { title: '流程跟踪', hidden: true },
+        },
+        // ---- 文档管理 ----
+        {
+          path: 'documents',
+          name: 'DocumentList',
+          component: () => import('@/views/document/DocumentView.vue'),
+          meta: { title: '文档管理', icon: 'Document', group: 'document' },
+        },
+        // ---- 预立项管理 ----
+        {
+          path: 'pre-project',
+          name: 'PreProjectList',
+          component: () => import('@/views/pre-project/PreProjectView.vue'),
+          meta: { title: '预立项管理', icon: 'TrendCharts', group: 'pre-project' },
+        },
+        // ---- Gate 评审 ----
+        {
+          path: 'gate-reviews',
+          name: 'GateReviewList',
+          component: () => import('@/views/gate-review/GateReviewView.vue'),
+          meta: { title: 'Gate 评审', icon: 'Checked', group: 'gate-review' },
+        },
+        // ---- OTS 样件管理 ----
+        {
+          path: 'ots',
+          name: 'OtsList',
+          component: () => import('@/views/ots/OtsView.vue'),
+          meta: { title: 'OTS 样件管理', icon: 'Box', group: 'ots-ppap' },
+        },
+        // ---- PPAP 提报管理 ----
+        {
+          path: 'ppap',
+          name: 'PpapList',
+          component: () => import('@/views/ppap/PpapView.vue'),
+          meta: { title: 'PPAP 提报管理', icon: 'FolderOpened', group: 'ots-ppap' },
+        },
+        // ---- 成本管理 ----
+        {
+          path: 'cost',
+          name: 'CostManagement',
+          component: () => import('@/views/cost/CostView.vue'),
+          meta: { title: '成本管理', icon: 'Money', group: 'cost' },
+        },
+        // ---- 采购管理 ----
+        {
+          path: 'procurement',
+          name: 'Procurement',
+          component: () => import('@/views/procurement/ProcurementView.vue'),
+          meta: { title: '采购管理', icon: 'ShoppingCart', group: 'procurement' },
+        },
+        // ---- 质量管理 ----
+        {
+          path: 'quality',
+          name: 'Quality',
+          component: () => import('@/views/quality/QualityView.vue'),
+          meta: { title: '质量管理', icon: 'CircleCheck', group: 'quality' },
+        },
+        // ---- 质量工程 ----
+        {
+          path: 'quality-engineering',
+          name: 'QualityEngineering',
+          component: () => import('@/views/quality/QualityEngineeringView.vue'),
+          meta: { title: '质量工程', icon: 'DataAnalysis', group: 'quality' },
+        },
+        // ---- 变更管理 ----
+        {
+          path: 'change-management',
+          name: 'ChangeManagement',
+          component: () => import('@/views/change/ChangeManagementView.vue'),
+          meta: { title: '工程变更管理', icon: 'Switch', group: 'change' },
         },
         // ---- 通知 ----
         {

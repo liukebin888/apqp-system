@@ -40,6 +40,10 @@ export const PERMISSIONS = {
     cost: {
       view: 'project:cost:view',
       edit: 'project:cost:edit',
+      estimate: 'project:cost:estimate',
+      approve: 'project:cost:approve',
+      adjust: 'project:cost:adjust',
+      analysis: 'project:cost:analysis',
     },
     resource: {
       view: 'project:resource:view',
@@ -75,6 +79,24 @@ export const PERMISSIONS = {
     supplier: {
       view: 'master-data:supplier:view',
       edit: 'master-data:supplier:edit',
+    },
+  },
+  procurement: {
+    request: {
+      view: 'procurement:request:view',
+      create: 'procurement:request:create',
+      approve: 'procurement:request:approve',
+    },
+    order: {
+      view: 'procurement:order:view',
+      create: 'procurement:order:create',
+      confirm: 'procurement:order:confirm',
+    },
+    supplier: {
+      view: 'procurement:supplier:view',
+      manage: 'procurement:supplier:manage',
+      evaluate: 'procurement:supplier:evaluate',
+      audit: 'procurement:supplier:audit',
     },
   },
 } as const

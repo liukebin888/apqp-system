@@ -42,9 +42,18 @@ export class MilestoneService {
     const milestone = await this.prisma.prjMilestone.findUnique({ where: { id } })
     if (!milestone) throw new NotFoundException('里程碑不存在')
 
-    const updateData = { ...data }
-    if (data.plannedDate) updateData.plannedDate = new Date(data.plannedDate) as any
-    if (data.actualDate) updateData.actualDate = new Date(data.actualDate) as any
+    const updateData: any = { ...data }
+    if (data.plannedDate) {
+      updateData.plannedDate = new Date(data.plannedDate)
+    } else if (data.plannedDate === '') {
+      updateData.plannedDate = null
+    }
+    
+    if (data.actualDate) {
+      updateData.actualDate = new Date(data.actualDate)
+    } else if (data.actualDate === '') {
+      updateData.actualDate = null
+    }
 
     return this.prisma.prjMilestone.update({ where: { id }, data: updateData })
   }

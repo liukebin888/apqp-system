@@ -68,6 +68,60 @@ model SysUser {
   riskResponses  PrjRiskResponse[]
   ownedRisks     PrjRisk[]
   managedProjects PrjProject[]    @relation("ProjectManager")
+  chairedGateReviews GateReview[] @relation("GateChairperson")
+  gateReviewParticipants GateReviewParticipant[]
+  otsSamplesCreated     OtsSample[]       @relation("OtsSampleCreator")
+  otsReportsCreated     OtsReport[]       @relation("OtsReportCreator")
+  otsTestsAsTester      OtsTestRecord[]   @relation("OtsTester")
+  otsApprovalsAsApprover OtsApproval[]    @relation("OtsApprover")
+  ppapPackagesCreated   PpapPackage[]     @relation("PpapPackageCreator")
+  ppapItemsCompleted    PpapItem[]        @relation("PpapItemCompleter")
+  ppapReviewsAsReviewer PpapSubmission[]  @relation("PpapReviewer")
+  pswSignatures         PpapSubmission[]  @relation("PswSigner")
+  costApprovals         PrjCost[]              @relation("CostApprover")
+  costEstimatesCreated  CostEstimate[]         @relation("CostEstimateCreator")
+  costEstimatesApproved CostEstimate[]         @relation("CostEstimateApprover")
+  budgetAdjRequested    CostBudgetAdjustment[] @relation("BudgetAdjRequester")
+  budgetAdjApproved     CostBudgetAdjustment[] @relation("BudgetAdjApprover")
+  purchaseRequestsApplied  PurchaseRequest[]   @relation("RequestApplicant")
+  purchaseRequestsApproved PurchaseRequest[]   @relation("RequestApprover")
+  ordersCreated         PurchaseOrder[]        @relation("OrderCreator")
+  ordersApproved        PurchaseOrder[]        @relation("OrderApprover")
+  supplierApprovals     MdSupplier[]           @relation("SupplierApprover")
+  evaluationsMade       SupplierEvaluation[]   @relation("EvaluationEvaluator")
+  auditsConducted       SupplierAudit[]        @relation("AuditAuditor")
+  ownedProblems         QualityProblem[]       @relation("ProblemOwner")
+  createdProblems       QualityProblem[]       @relation("ProblemCreator")
+  closedProblems        QualityProblem[]       @relation("ProblemCloser")
+  created8DReports      Quality8DReport[]      @relation("8DReportCreator")
+  disposedNonconformances QualityNonconformance[] @relation("NCDisposer")
+  createdCapas          QualityCAPA[]          @relation("CAPACreator")
+  assignedCapas         QualityCAPA[]          @relation("CAPAAssignee")
+  verifiedCapas         QualityCAPA[]          @relation("CAPAVerifier")
+  inspections           QualityInspection[]    @relation("Inspector")
+  dfmeasCreated         FmeaDfmea[]            @relation("DfmeaCreator")
+  dfmeasTeamLed         FmeaDfmea[]            @relation("DfmeaTeamLeader")
+  dfmeasApproved        FmeaDfmea[]            @relation("DfmeaApprover")
+  dfmeaActionsOwned     FmeaDfmeaItem[]        @relation("DfmeaActionOwner")
+  pfmeasCreated         FmeaPfmea[]            @relation("PfmeaCreator")
+  pfmeasTeamLed         FmeaPfmea[]            @relation("PfmeaTeamLeader")
+  pfmeasApproved        FmeaPfmea[]            @relation("PfmeaApprover")
+  pfmeaActionsOwned     FmeaPfmeaItem[]        @relation("PfmeaActionOwner")
+  processFlowsCreated   FmeaProcessFlow[]      @relation("ProcessFlowCreator")
+  cpsCreated            FmeaControlPlan[]      @relation("CPCreator")
+  cpsApproved         FmeaControlPlan[]      @relation("CPApprover")
+  specCharsCreated      FmeaSpecialCharacteristic[] @relation("SpecCharCreator")
+  spcStudiesCreated     QeSpcStudy[]           @relation("SpcStudyCreator")
+  msaStudiesCreated     QeMsaStudy[]           @relation("MsaStudyCreator")
+  msaOperators          QeMsaMeasurement[]     @relation("MsaOperator")
+  kbEntriesCreated      FmeaKnowledgeBase[]    @relation("KBEntryCreator")
+
+  ecrsRequested         ChgEcr[]               @relation("EcrRequester")
+  ecrsAssigned          ChgEcr[]               @relation("EcrAssignee")
+  ccbReviewsGiven       ChgCcbReview[]         @relation("CcbReviewer")
+  ecnsIssued            ChgEcn[]               @relation("EcnIssuer")
+  ecnsVerified          ChgEcn[]               @relation("EcnVerifier")
+  ecnActionsAssigned    ChgEcnActionItem[]     @relation("EcnActionAssignee")
 
   @@map("sys_users")
 }
@@ -177,6 +231,10 @@ model MdCustomer {
 
   products MdProduct[]
   projects PrjProject[]
+  preRfqs    PreRfq[]
+  preNominations PreNomination[]
+  otsSamples OtsSample[]
+  ppapPackages PpapPackage[]
 
   @@map("md_customers")
 }
@@ -218,18 +276,27 @@ model MdSupplier {
   supplierCode       String    @unique @db.VarChar(50)
   supplierName       String    @db.VarChar(200)
   creditCode         String?   @unique @db.VarChar(50) // unified social credit code
+  category           String?   @db.VarChar(30) // raw_material/parts/outsource/equipment/tooling/other
+  level              String?   @db.VarChar(20) // strategic/important/general/temporary
   contactName        String?   @db.VarChar(50)
   contactPhone       String?   @db.VarChar(20)
   contactEmail       String?   @db.VarChar(100)
   address            String?   @db.VarChar(500)
-  qualificationStatus String?  @db.VarChar(20) // qualified/probation/blacklisted
+  qualificationStatus String?  @db.VarChar(20) // pending/qualified/probation/blacklisted
   rating             String?   @db.VarChar(10) // A/B/C/D
+  admissionDate      DateTime?
+  approvedById       Int?      @db.UnsignedInt
   status             Int       @default(1) @db.TinyInt
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  documents MdSupplierDocument[]
-  ratings   MdSupplierRating[]
+  documents      MdSupplierDocument[]
+  ratings        MdSupplierRating[]
+  purchaseOrders PurchaseOrder[]
+  evaluations    SupplierEvaluation[]
+  audits         SupplierAudit[]
+  approvedBy     SysUser?          @relation("SupplierApprover", fields: [approvedById], references: [id])
+  nonconformances QualityNonconformance[]
 
   @@map("md_suppliers")
 }
@@ -489,6 +556,28 @@ model PrjProject {
   risks        PrjRisk[]
   costs        PrjCost[]
   resources    PrjResource[]
+  requirements ReqRequirement[]
+  reqBaselines ReqBaseline[]
+  reqChangeRequests ReqChangeRequest[]
+  gateReviews  GateReview[]
+  otsSamples   OtsSample[]
+  ppapPackages PpapPackage[]
+  costEstimates CostEstimate[]
+  costAlerts   CostAlert[]
+  purchaseRequests PurchaseRequest[]
+  qualityProblems  QualityProblem[]
+  nonconformances  QualityNonconformance[]
+  capas            QualityCAPA[]
+  inspections      QualityInspection[]
+  dfmeas           FmeaDfmea[]
+  processFlows     FmeaProcessFlow[]
+  pfmeas           FmeaPfmea[]
+  controlPlans     FmeaControlPlan[]
+  specialCharacteristics FmeaSpecialCharacteristic[]
+  spcStudies       QeSpcStudy[]
+  msaStudies       QeMsaStudy[]
+  chgEcrs          ChgEcr[]
+  chgEcns          ChgEcn[]
 
   @@index([status])
   @@index([managerId])
@@ -619,16 +708,29 @@ model PrjRiskResponse {
 }
 
 model PrjCost {
-  id           Int       @id @default(autoincrement()) @db.UnsignedInt
-  projectId    Int       @db.UnsignedInt
-  budgetCategory String  @db.VarChar(50) // material/tooling/labor/external/other
-  budgetAmount Decimal   @default(0) @db.Decimal(12, 2)
-  actualAmount Decimal   @default(0) @db.Decimal(12, 2)
-  forecastAmount Decimal @default(0) @db.Decimal(12, 2)
+  id               Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId        Int       @db.UnsignedInt
+  budgetCategory   String    @db.VarChar(50) // material/tooling/labor/external/other
+  budgetAmount     Decimal   @default(0) @db.Decimal(12, 2)
+  actualAmount     Decimal   @default(0) @db.Decimal(12, 2)
+  forecastAmount   Decimal   @default(0) @db.Decimal(12, 2)
+  version          String?   @db.VarChar(10)
+  status           String    @default("draft") @db.VarChar(20) // draft/pending/approved/rejected/published
+  estimateId       Int?      @db.UnsignedInt
+  approvedById     Int?      @db.UnsignedInt
+  approvedAt       DateTime?
+  workflowInstanceId Int?    @db.UnsignedInt
 
-  project PrjProject     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  entries PrjCostEntry[]
+  project      PrjProject              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  entries      PrjCostEntry[]
+  estimate     CostEstimate?           @relation(fields: [estimateId], references: [id])
+  approvedBy   SysUser?                @relation("CostApprover", fields: [approvedById], references: [id])
+  adjustments  CostBudgetAdjustment[]
+  alerts       CostAlert[]
 
+  @@unique([projectId, budgetCategory])
+  @@index([projectId, budgetCategory])
+  @@index([estimateId])
   @@map("prj_costs")
 }
 
@@ -735,4 +837,1386 @@ model DocumentPermission {
 
   @@unique([documentId, granteeType, granteeId])
   @@map("document_permissions")
+}
+
+// ============================================================
+// Layer 4: A-SPICE Requirements & Traceability (V2.5)
+// ============================================================
+
+model ReqRequirement {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId   Int       @db.UnsignedInt
+  reqCode     String    @db.VarChar(50)
+  title       String    @db.VarChar(200)
+  description String?   @db.Text
+  reqType     String    @db.VarChar(20) // customer/system/software/performance/safety/regulatory
+  priority    String    @default("medium") @db.VarChar(10) // high/medium/low
+  asilLevel   String?   @db.VarChar(5) // QM/A/B/C/D
+  status      String    @default("draft") @db.VarChar(20) // draft/in_review/approved/changed/obsolete
+  version     Int       @default(1)
+  source      String?   @db.VarChar(200) // source document or reference
+  acceptanceCriteria String? @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project      PrjProject           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions     ReqRequirementVersion[]
+  sourceLinks  ReqTraceLink[]       @relation("SourceRequirement")
+  targetLinks  ReqTraceLink[]       @relation("TargetRequirement")
+  baselines    ReqBaselineRequirement[]
+  changeRequestLinks ReqChangeRequestRequirement[]
+
+  @@index([projectId])
+  @@index([reqType, status])
+  @@map("req_requirements")
+}
+
+model ReqRequirementVersion {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  requirementId  Int       @db.UnsignedInt
+  versionNo      Int
+  title          String    @db.VarChar(200)
+  description    String?   @db.Text
+  changeNote     String?   @db.VarChar(500)
+  createdById    Int       @db.UnsignedInt
+  createdAt      DateTime  @default(now())
+
+  requirement ReqRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([requirementId, versionNo])
+  @@map("req_requirement_versions")
+}
+
+model ReqTraceLink {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  sourceReqId    Int       @db.UnsignedInt
+  targetReqId    Int?      @db.UnsignedInt
+  targetType     String    @db.VarChar(20) // requirement/test_case/design/code
+  targetId       Int?      @db.UnsignedInt // ID of test case, design doc, or code module
+  linkType       String    @db.VarChar(10) // derive/allocate/implement/verify/trace
+  verificationMethod String? @db.VarChar(20) // test/analysis/demonstration/inspection
+  status         String    @default("active") @db.VarChar(20) // active/suspended/obsolete
+  createdAt      DateTime  @default(now())
+
+  sourceReq ReqRequirement @relation("SourceRequirement", fields: [sourceReqId], references: [id], onDelete: Cascade)
+  targetReq ReqRequirement? @relation("TargetRequirement", fields: [targetReqId], references: [id])
+
+  @@index([sourceReqId])
+  @@index([targetReqId])
+  @@index([linkType])
+  @@map("req_trace_links")
+}
+
+model ReqBaseline {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId    Int       @db.UnsignedInt
+  baselineName String    @db.VarChar(100)
+  baselineCode String    @db.VarChar(50)
+  baselineType String    @db.VarChar(20) // functional/allocated/product
+  version      String    @db.VarChar(20)
+  status       String    @default("draft") @db.VarChar(20) // draft/frozen/changed
+  description  String?   @db.Text
+  createdById  Int       @db.UnsignedInt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  project     PrjProject               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requirements ReqBaselineRequirement[]
+
+  @@unique([projectId, baselineCode])
+  @@map("req_baselines")
+}
+
+model ReqBaselineRequirement {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  baselineId   Int       @db.UnsignedInt
+  requirementId Int      @db.UnsignedInt
+  reqVersion   Int       @default(1) // snapshot of requirement version at baseline time
+
+  baseline    ReqBaseline    @relation(fields: [baselineId], references: [id], onDelete: Cascade)
+  requirement ReqRequirement @relation(fields: [requirementId], references: [id])
+
+  @@unique([baselineId, requirementId])
+  @@map("req_baseline_requirements")
+}
+
+model ReqChangeRequest {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  crCode          String    @db.VarChar(50)
+  title           String    @db.VarChar(200)
+  description     String?   @db.Text
+  changeType      String    @db.VarChar(20) // add/modify/delete
+  impactAnalysis  String?   @db.Text
+  priority        String    @default("medium") @db.VarChar(10)
+  status          String    @default("draft") @db.VarChar(20) // draft/submitted/under_review/approved/rejected/implemented
+  requestedById   Int       @db.UnsignedInt
+  approvedById    Int?      @db.UnsignedInt
+  approvedAt      DateTime?
+  implementedAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project      PrjProject              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requirements ReqChangeRequestRequirement[]
+
+  @@index([projectId, status])
+  @@map("req_change_requests")
+}
+
+model ReqChangeRequestRequirement {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  changeRequestId Int      @db.UnsignedInt
+  requirementId  Int       @db.UnsignedInt
+
+  changeRequest ReqChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+  requirement   ReqRequirement   @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([changeRequestId, requirementId])
+  @@map("req_change_request_requirements")
+}
+
+model ReqCoverageAnalysis {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId      Int       @db.UnsignedInt
+  analysisDate   DateTime  @default(now())
+  totalRequirements Int
+  tracedRequirements Int
+  coverageRate   Decimal   @db.Decimal(5, 2)
+  orphanRequirements Json? // IDs of requirements without downstream trace
+  orphanTestCases Json?    // IDs of test cases without upstream requirement
+  asilCoverage   Json?     // ASIL level coverage breakdown
+  createdById    Int       @db.UnsignedInt
+
+  @@index([projectId])
+  @@map("req_coverage_analysis")
+}
+
+// ============================================================
+// Layer 4: Pre-Project Management (V2.4)
+// ============================================================
+
+model PreRfq {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  rfqCode         String    @unique @db.VarChar(50)
+  customerId      Int       @db.UnsignedInt
+  partNumber      String    @db.VarChar(100)
+  partName        String    @db.VarChar(200)
+  receiveDate     DateTime
+  targetPrice     Decimal?  @db.Decimal(12, 2)
+  annualVolume    Int?
+  status          String    @default("received") @db.VarChar(20) // received/analyzing/proposal_submitted/quoting/nominated/lost
+  description     String?   @db.Text
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  customer        MdCustomer              @relation(fields: [customerId], references: [id])
+  quotations      PreQuotation[]
+  proposals       PreTechnicalProposal[]
+  feasibility     PreFeasibilityStudy?
+  nomination      PreNomination?
+
+  @@index([customerId, status])
+  @@map("pre_rfqs")
+}
+
+model PreQuotation {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  rfqId           Int       @db.UnsignedInt
+  version         Int       @default(1)
+  totalPrice      Decimal   @db.Decimal(12, 2)
+  materialCost    Decimal?  @db.Decimal(12, 2)
+  laborCost       Decimal?  @db.Decimal(12, 2)
+  overheadCost    Decimal?  @db.Decimal(12, 2)
+  profitMargin    Decimal?  @db.Decimal(5, 2)
+  validUntil      DateTime?
+  status          String    @default("draft") @db.VarChar(20) // draft/submitted/approved/rejected
+  notes           String?   @db.Text
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  rfq             PreRfq    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@unique([rfqId, version])
+  @@map("pre_quotations")
+}
+
+model PreTechnicalProposal {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  rfqId           Int       @db.UnsignedInt
+  version         Int       @default(1)
+  title           String    @db.VarChar(200)
+  content         String?   @db.Text
+  techSolution    String?   @db.Text
+  timeline        String?   @db.Text
+  risks           String?   @db.Text
+  customerApproved Boolean  @default(false)
+  approvedAt      DateTime?
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  rfq             PreRfq    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@unique([rfqId, version])
+  @@map("pre_technical_proposals")
+}
+
+model PreFeasibilityStudy {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  rfqId           Int       @unique @db.UnsignedInt
+  techScore       Decimal   @db.Decimal(5, 2) // 0-100
+  capacityScore   Decimal   @db.Decimal(5, 2)
+  qualityScore    Decimal   @db.Decimal(5, 2)
+  businessScore   Decimal   @db.Decimal(5, 2)
+  overallScore    Decimal   @db.Decimal(5, 2)
+  techComment     String?   @db.Text
+  capacityComment String?   @db.Text
+  qualityComment  String?   @db.Text
+  businessComment String?   @db.Text
+  conclusion      String?   @db.VarChar(20) // feasible/conditional/not_feasible
+  reviewedById    Int       @db.UnsignedInt
+  reviewedAt      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+
+  rfq             PreRfq    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@map("pre_feasibility_studies")
+}
+
+model PreNomination {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  rfqId           Int       @unique @db.UnsignedInt
+  customerId      Int       @db.UnsignedInt
+  nominationDate  DateTime
+  letterUrl       String?   @db.VarChar(500)
+  projectCode     String?   @db.VarChar(50)
+  notes           String?   @db.Text
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+
+  rfq             PreRfq    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  customer        MdCustomer @relation(fields: [customerId], references: [id])
+
+  @@map("pre_nominations")
+}
+
+// ============================================================
+// Layer 4: Gate Review Management (V2.4)
+// ============================================================
+
+model GateReview {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  gateType        String    @db.VarChar(10) // G0/G1/G2/G3/G4/G5
+  gateName        String    @db.VarChar(100)
+  plannedDate     DateTime
+  actualDate      DateTime?
+  status          String    @default("planned") @db.VarChar(20) // planned/in_progress/passed/failed/cancelled
+  chairpersonId   Int?      @db.UnsignedInt
+  conclusion      String?   @db.Text
+  followUpActions String?   @db.Text
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project         PrjProject         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chairperson     SysUser?           @relation("GateChairperson", fields: [chairpersonId], references: [id])
+  items           GateReviewItem[]
+  participants    GateReviewParticipant[]
+
+  @@index([projectId, gateType])
+  @@map("gate_reviews")
+}
+
+model GateReviewItem {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  reviewId        Int       @db.UnsignedInt
+  category        String    @db.VarChar(50) // document/deliverable/process/resource
+  itemName        String    @db.VarChar(200)
+  requirement     String?   @db.Text
+  actualStatus    String?   @db.VarChar(20) // compliant/partial/non_compliant/na
+  evidence        String?   @db.Text
+  score           Decimal?  @db.Decimal(5, 2)
+  comments        String?   @db.Text
+  sortOrder       Int       @default(0)
+
+  review          GateReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("gate_review_items")
+}
+
+model GateReviewParticipant {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  reviewId        Int       @db.UnsignedInt
+  userId          Int       @db.UnsignedInt
+  role            String    @db.VarChar(50) // chairperson/reviewer/observer
+  attendance      String    @default("invited") @db.VarChar(20) // invited/attended/absent
+  signature       String?   @db.VarChar(255)
+  signedAt        DateTime?
+
+  review          GateReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user            SysUser    @relation(fields: [userId], references: [id])
+
+  @@unique([reviewId, userId])
+  @@map("gate_review_participants")
+}
+
+// ==================== OTS 认可管理 ====================
+
+model OtsSample {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  sampleCode      String    @unique @db.VarChar(50)
+  partNumber      String    @db.VarChar(100)
+  partName        String    @db.VarChar(200)
+  sampleType      String    @db.VarChar(20) // ots/pvs/sop
+  quantity        Int       @default(1) @db.UnsignedInt
+  manufactureDate DateTime?
+  submitDate      DateTime?
+  status          String    @default("planned") @db.VarChar(20) // planned/in_production/submitted/testing/approved/rejected
+  customerId      Int       @db.UnsignedInt
+  remarks         String?   @db.Text
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project         PrjProject    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  customer        MdCustomer    @relation(fields: [customerId], references: [id])
+  createdBy       SysUser       @relation("OtsSampleCreator", fields: [createdById], references: [id])
+  reports         OtsReport[]
+  testRecords     OtsTestRecord[]
+  approvals       OtsApproval[]
+
+  @@index([projectId, status])
+  @@index([customerId])
+  @@map("ots_samples")
+}
+
+model OtsReport {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  sampleId        Int       @db.UnsignedInt
+  reportCode      String    @unique @db.VarChar(50)
+  reportType      String    @db.VarChar(50) // dimension/material/appearance/function
+  reportDate      DateTime  @default(now())
+  result          String    @db.VarChar(20) // pass/fail/conditional
+  conclusion      String?   @db.Text
+  documentId      Int?      @db.UnsignedInt
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sample          OtsSample   @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  createdBy       SysUser     @relation("OtsReportCreator", fields: [createdById], references: [id])
+
+  @@index([sampleId])
+  @@map("ots_reports")
+}
+
+model OtsTestRecord {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  sampleId        Int       @db.UnsignedInt
+  testName        String    @db.VarChar(200)
+  testStandard    String?   @db.VarChar(200)
+  testDate        DateTime  @default(now())
+  expectedResult  String?   @db.VarChar(500)
+  actualResult    String?   @db.VarChar(500)
+  result          String    @db.VarChar(20) // pass/fail
+  testerId        Int       @db.UnsignedInt
+  remarks         String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sample          OtsSample   @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  tester          SysUser     @relation("OtsTester", fields: [testerId], references: [id])
+
+  @@index([sampleId])
+  @@map("ots_test_records")
+}
+
+model OtsApproval {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  sampleId        Int       @db.UnsignedInt
+  approvalDate    DateTime  @default(now())
+  status          String    @db.VarChar(20) // pending/approved/rejected/conditional
+  approverId      Int       @db.UnsignedInt
+  approvalType    String    @db.VarChar(20) // customer/internal
+  comments        String?   @db.Text
+  nextAction      String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sample          OtsSample   @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  approver        SysUser     @relation("OtsApprover", fields: [approverId], references: [id])
+
+  @@index([sampleId, status])
+  @@map("ots_approvals")
+}
+
+// ==================== PPAP 提报管理 ====================
+
+model PpapPackage {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  packageCode     String    @unique @db.VarChar(50)
+  partNumber      String    @db.VarChar(100)
+  partName        String    @db.VarChar(200)
+  ppapLevel       Int       @default(3) @db.UnsignedInt // 1-5
+  submissionType  String    @db.VarChar(20) // full/disclosure/sample
+  status          String    @default("draft") @db.VarChar(20) // draft/in_review/submitted/approved/rejected
+  customerId      Int       @db.UnsignedInt
+  dueDate         DateTime?
+  submittedDate   DateTime?
+  approvedDate    DateTime?
+  remarks         String?   @db.Text
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project         PrjProject    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  customer        MdCustomer    @relation(fields: [customerId], references: [id])
+  createdBy       SysUser       @relation("PpapPackageCreator", fields: [createdById], references: [id])
+  items           PpapItem[]
+  submissions     PpapSubmission[]
+
+  @@index([projectId, status])
+  @@index([customerId])
+  @@map("ppap_packages")
+}
+
+model PpapItem {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  packageId       Int       @db.UnsignedInt
+  itemNumber      Int       @db.UnsignedInt // 1-17 PPAP items
+  itemName        String    @db.VarChar(200)
+  required        Boolean   @default(true)
+  status          String    @default("pending") @db.VarChar(20) // pending/in_progress/complete/na
+  documentId      Int?      @db.UnsignedInt
+  remarks         String?   @db.Text
+  completedAt     DateTime?
+  completedById   Int?      @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  package         PpapPackage   @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  completedBy     SysUser?      @relation("PpapItemCompleter", fields: [completedById], references: [id])
+
+  @@unique([packageId, itemNumber])
+  @@index([packageId, status])
+  @@map("ppap_items")
+}
+
+model PpapSubmission {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  packageId       Int       @db.UnsignedInt
+  submissionDate  DateTime  @default(now())
+  submissionType  String    @db.VarChar(20) // initial/resubmission/supplement
+  status          String    @default("submitted") @db.VarChar(20) // submitted/under_review/approved/rejected/conditional
+  reviewerId      Int?      @db.UnsignedInt
+  reviewDate      DateTime?
+  reviewComments  String?   @db.Text
+  pswStatus       String    @db.VarChar(20) // not_required/pending/signed
+  pswSignedDate   DateTime?
+  pswSignedById   Int?      @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  package         PpapPackage   @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  reviewer        SysUser?      @relation("PpapReviewer", fields: [reviewerId], references: [id])
+  pswSignedBy     SysUser?      @relation("PswSigner", fields: [pswSignedById], references: [id])
+
+  @@index([packageId, status])
+  @@map("ppap_submissions")
+}
+
+// ==================== Cost Management ====================
+
+model CostEstimate {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId     Int       @db.UnsignedInt
+  version       String    @db.VarChar(10) // V1.0/V2.0/V3.0/V4.0
+  versionLabel  String    @db.VarChar(50) // 立项估算/设计估算/开发估算/决算
+  status        String    @default("draft") @db.VarChar(20) // draft/calculating/pending_approval/approved/published/rejected
+  totalAmount   Decimal   @default(0) @db.Decimal(14, 2)
+  createdById   Int       @db.UnsignedInt
+  approvedById  Int?      @db.UnsignedInt
+  approvedAt    DateTime?
+  publishedAt   DateTime?
+  remarks       String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project       PrjProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy     SysUser           @relation("CostEstimateCreator", fields: [createdById], references: [id])
+  approvedBy    SysUser?          @relation("CostEstimateApprover", fields: [approvedById], references: [id])
+  items         CostEstimateItem[]
+  costs         PrjCost[]
+
+  @@unique([projectId, version])
+  @@index([projectId, status])
+  @@map("cost_estimates")
+}
+
+model CostEstimateItem {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  estimateId    Int       @db.UnsignedInt
+  category      String    @db.VarChar(30) // labor/material/outsourcing/travel/equipment/other
+  itemName      String    @db.VarChar(200)
+  quantity      Decimal   @default(1) @db.Decimal(12, 4)
+  unitPrice     Decimal   @default(0) @db.Decimal(12, 4)
+  unit          String?   @db.VarChar(20) // 小时/件/次/月
+  amount        Decimal   @default(0) @db.Decimal(14, 2)
+  basisRef      String?   @db.VarChar(100)
+  remarks       String?   @db.VarChar(500)
+  sortOrder     Int       @default(0) @db.Int
+
+  estimate      CostEstimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+
+  @@index([estimateId, category])
+  @@map("cost_estimate_items")
+}
+
+model CostBudgetAdjustment {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  costId          Int       @db.UnsignedInt
+  adjustmentType  String    @db.VarChar(20) // transfer/addition/reduction
+  originalAmount  Decimal   @db.Decimal(12, 2)
+  adjustedAmount  Decimal   @db.Decimal(12, 2)
+  reason          String    @db.Text
+  status          String    @default("pending") @db.VarChar(20) // pending/approved/rejected
+  requestedById   Int       @db.UnsignedInt
+  approvedById    Int?      @db.UnsignedInt
+  approvedAt      DateTime?
+  workflowInstanceId Int?   @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  cost            PrjCost    @relation(fields: [costId], references: [id], onDelete: Cascade)
+  requestedBy     SysUser    @relation("BudgetAdjRequester", fields: [requestedById], references: [id])
+  approvedBy      SysUser?   @relation("BudgetAdjApprover", fields: [approvedById], references: [id])
+
+  @@index([costId, status])
+  @@map("cost_budget_adjustments")
+}
+
+model CostAlert {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId     Int       @db.UnsignedInt
+  costId        Int?      @db.UnsignedInt
+  alertLevel    String    @db.VarChar(10) // yellow/orange/red
+  alertType     String    @db.VarChar(30) // budget_overrun/variance/cpi_low
+  currentValue  Decimal   @db.Decimal(12, 2)
+  thresholdValue Decimal  @db.Decimal(12, 2)
+  message       String    @db.VarChar(500)
+  isResolved    Boolean   @default(false)
+  resolvedById  Int?      @db.UnsignedInt
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  project       PrjProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  cost          PrjCost?   @relation(fields: [costId], references: [id])
+
+  @@index([projectId, isResolved])
+  @@index([alertLevel])
+  @@map("cost_alerts")
+}
+
+// ============================================================
+// Layer 10: Procurement Management
+// ============================================================
+
+model PurchaseRequest {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  requestNo       String    @unique @db.VarChar(50)
+  applicantId     Int       @db.UnsignedInt
+  department      String?   @db.VarChar(100)
+  category        String    @db.VarChar(30) // raw_material/parts/outsource/equipment/tooling/other
+  status          String    @default("draft") @db.VarChar(20) // draft/pending/approved/rejected/cancelled/completed
+  totalAmount     Decimal   @default(0) @db.Decimal(14, 2)
+  expectedDate    DateTime?
+  reason          String?   @db.Text
+  remarks         String?   @db.Text
+  approvedById    Int?      @db.UnsignedInt
+  approvedAt      DateTime?
+  workflowInstanceId Int?   @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project         PrjProject          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  applicant       SysUser             @relation("RequestApplicant", fields: [applicantId], references: [id])
+  approvedBy      SysUser?            @relation("RequestApprover", fields: [approvedById], references: [id])
+  items           PurchaseRequestItem[]
+  orders          PurchaseOrder[]
+
+  @@index([projectId, status])
+  @@index([applicantId])
+  @@map("purchase_requests")
+}
+
+model PurchaseRequestItem {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  requestId       Int       @db.UnsignedInt
+  materialCode    String?   @db.VarChar(50)
+  materialName    String    @db.VarChar(200)
+  specification   String?   @db.VarChar(500)
+  quantity        Decimal   @db.Decimal(12, 4)
+  unit            String?   @db.VarChar(20)
+  expectedPrice   Decimal   @db.Decimal(12, 4)
+  amount          Decimal   @db.Decimal(14, 2)
+  remarks         String?   @db.VarChar(500)
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  request         PurchaseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("purchase_request_items")
+}
+
+model PurchaseOrder {
+  id                Int       @id @default(autoincrement()) @db.UnsignedInt
+  orderNo           String    @unique @db.VarChar(50)
+  supplierId        Int       @db.UnsignedInt
+  requestId         Int?      @db.UnsignedInt
+  projectId         Int?      @db.UnsignedInt
+  orderDate         DateTime  @default(now())
+  deliveryDate      DateTime?
+  totalAmount       Decimal   @default(0) @db.Decimal(14, 2)
+  paymentTerms      String?   @db.VarChar(500)
+  qualityRequirements String? @db.Text
+  penaltyClauses    String?   @db.Text
+  status            String    @default("draft") @db.VarChar(20) // draft/pending_approval/approved/confirmed/in_transit/received/closed/cancelled
+  approvedById      Int?      @db.UnsignedInt
+  approvedAt        DateTime?
+  createdById       Int       @db.UnsignedInt
+  remarks           String?   @db.Text
+  workflowInstanceId Int?     @db.UnsignedInt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  supplier          MdSupplier          @relation(fields: [supplierId], references: [id])
+  request           PurchaseRequest?    @relation(fields: [requestId], references: [id])
+  createdBy         SysUser             @relation("OrderCreator", fields: [createdById], references: [id])
+  approvedBy        SysUser?            @relation("OrderApprover", fields: [approvedById], references: [id])
+  items             PurchaseOrderItem[]
+
+  @@index([supplierId, status])
+  @@index([projectId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  orderId         Int       @db.UnsignedInt
+  materialCode    String?   @db.VarChar(50)
+  materialName    String    @db.VarChar(200)
+  specification   String?   @db.VarChar(500)
+  quantity        Decimal   @db.Decimal(12, 4)
+  unit            String?   @db.VarChar(20)
+  unitPrice       Decimal   @db.Decimal(12, 4)
+  amount          Decimal   @db.Decimal(14, 2)
+  receivedQty     Decimal   @default(0) @db.Decimal(12, 4)
+  remarks         String?   @db.VarChar(500)
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  order           PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("purchase_order_items")
+}
+
+model SupplierEvaluation {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  supplierId      Int       @db.UnsignedInt
+  evaluationDate  DateTime  @default(now())
+  evaluatorId     Int       @db.UnsignedInt
+  qualityScore    Decimal   @db.Decimal(5, 2)
+  deliveryScore   Decimal   @db.Decimal(5, 2)
+  costScore       Decimal   @db.Decimal(5, 2)
+  serviceScore    Decimal   @db.Decimal(5, 2)
+  totalScore      Decimal   @db.Decimal(5, 2)
+  level           String    @db.VarChar(5) // A/B/C/D
+  period          String?   @db.VarChar(20) // e.g. "2026-Q1"
+  remarks         String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  supplier        MdSupplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  evaluator       SysUser    @relation("EvaluationEvaluator", fields: [evaluatorId], references: [id])
+
+  @@index([supplierId, evaluationDate])
+  @@map("supplier_evaluations")
+}
+
+model SupplierAudit {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  supplierId      Int       @db.UnsignedInt
+  auditType       String    @db.VarChar(20) // annual/special/onsite
+  auditDate       DateTime  @default(now())
+  auditorId       Int       @db.UnsignedInt
+  result          String    @db.VarChar(20) // pass/conditional/fail
+  findings        String?   @db.Text
+  correctiveActions String? @db.Text
+  followUpDate    DateTime?
+  remarks         String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  supplier        MdSupplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  auditor         SysUser    @relation("AuditAuditor", fields: [auditorId], references: [id])
+
+  @@index([supplierId, auditDate])
+  @@map("supplier_audits")
+}
+
+model QualityProblem {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  problemNo       String    @unique @db.VarChar(50)
+  title           String    @db.VarChar(200)
+  description     String?   @db.Text
+  classification  String    @db.VarChar(20) // quality/process/material/customer
+  severity        String    @db.VarChar(20) // critical/major/minor/trivial
+  source          String    @db.VarChar(30) // process_inspection/customer_complaint/supplier_material/internal_audit/external_audit/management_review
+  status          String    @default("new") @db.VarChar(20) // new/analyzing/correcting/verifying/closed/escalated
+  ownerId         Int?      @db.UnsignedInt
+  createdById     Int       @db.UnsignedInt
+  closedById      Int?      @db.UnsignedInt
+  closedAt        DateTime?
+  dueDate         DateTime?
+  has8DReport     Boolean   @default(false)
+  relatedOrderId  Int?      @db.UnsignedInt
+  relatedOrderNo  String?   @db.VarChar(50)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project         PrjProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  owner           SysUser?          @relation("ProblemOwner", fields: [ownerId], references: [id])
+  createdBy       SysUser           @relation("ProblemCreator", fields: [createdById], references: [id])
+  closedBy        SysUser?          @relation("ProblemCloser", fields: [closedById], references: [id])
+  eightDReport    Quality8DReport?
+
+  @@index([projectId])
+  @@index([status])
+  @@index([severity])
+  @@map("quality_problems")
+}
+
+model Quality8DReport {
+  id                          Int       @id @default(autoincrement()) @db.UnsignedInt
+  problemId                   Int       @unique @db.UnsignedInt
+  reportNo                    String    @unique @db.VarChar(50)
+  d1Team                      String?   @db.Text
+  d1ProblemDescription        String?   @db.Text
+  d2ContainmentAction         String?   @db.Text
+  d2ContainmentDate           DateTime?
+  d3RootCauseAnalysis         String?   @db.Text
+  d3RootCauseVerified         Boolean   @default(false)
+  d4PermanentCorrectiveAction String?   @db.Text
+  d4ImplementationDate        DateTime?
+  d5PreventiveAction          String?   @db.Text
+  d5SystematicRecommendation  String?   @db.Text
+  d6Verification              String?   @db.Text
+  d6VerificationDate          DateTime?
+  d6Result                    String?   @db.VarChar(20)
+  d7Standardization           String?   @db.Text
+  d7DocumentUpdated           Boolean   @default(false)
+  d8LessonsLearned            String?   @db.Text
+  d8Congratulate              String?   @db.Text
+  status                      String    @default("in_progress") @db.VarChar(20)
+  completionRate              Decimal   @default(0) @db.Decimal(5, 2)
+  createdById                 Int       @db.UnsignedInt
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+
+  problem       QualityProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  createdBy     SysUser        @relation("8DReportCreator", fields: [createdById], references: [id])
+
+  @@map("quality_8d_reports")
+}
+
+model QualityNonconformance {
+  id                    Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId             Int       @db.UnsignedInt
+  ncNo                  String    @unique @db.VarChar(50)
+  title                 String    @db.VarChar(200)
+  description           String?   @db.Text
+  product               String?   @db.VarChar(200)
+  material              String?   @db.VarChar(200)
+  lotNo                 String?   @db.VarChar(100)
+  supplierId            Int?      @db.UnsignedInt
+  defectType            String    @db.VarChar(30) // dimension/appearance/function/material/packaging
+  quantity              Int       @default(0) @db.UnsignedInt
+  defectQuantity        Int       @default(0) @db.UnsignedInt
+  disposition           String?   @db.VarChar(20) // rework/repair/concession/scrap/return
+  dispositionDate       DateTime?
+  dispositionById       Int?      @db.UnsignedInt
+  costImpact            Decimal?  @db.Decimal(12, 2)
+  relatedInspectionId   Int?      @db.UnsignedInt
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  project         PrjProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  supplier        MdSupplier?       @relation(fields: [supplierId], references: [id])
+  dispositionBy   SysUser?          @relation("NCDisposer", fields: [dispositionById], references: [id])
+
+  @@index([projectId])
+  @@index([supplierId])
+  @@map("quality_nonconformances")
+}
+
+model QualityCAPA {
+  id                        Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId                 Int?      @db.UnsignedInt
+  capaNo                    String    @unique @db.VarChar(50)
+  title                     String    @db.VarChar(200)
+  description               String?   @db.Text
+  source                    String    @db.VarChar(30) // problem/nonconformance/internal_audit/management_review/customer_complaint/process_analysis
+  type                      String    @db.VarChar(20) // corrective/preventive
+  relatedProblemId          Int?      @db.UnsignedInt
+  relatedNonconformanceId   Int?      @db.UnsignedInt
+  rootCause                 String?   @db.Text
+  correctiveAction          String?   @db.Text
+  preventiveAction          String?   @db.Text
+  targetDate                DateTime?
+  completedAt               DateTime?
+  verifiedById              Int?      @db.UnsignedInt
+  verifiedAt                DateTime?
+  effectivenessResult       String?   @db.Text
+  status                    String    @default("pending") @db.VarChar(20) // pending/in_progress/completed/verified/closed
+  createdById               Int       @db.UnsignedInt
+  assignedToId              Int?      @db.UnsignedInt
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  createdBy           SysUser    @relation("CAPACreator", fields: [createdById], references: [id])
+  assignedTo          SysUser?   @relation("CAPAAssignee", fields: [assignedToId], references: [id])
+  verifiedBy          SysUser?   @relation("CAPAVerifier", fields: [verifiedById], references: [id])
+  project             PrjProject? @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+  @@index([status])
+  @@index([type])
+  @@map("quality_capas")
+}
+
+model QualityInspection {
+  id                      Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId               Int       @db.UnsignedInt
+  inspectionNo            String    @unique @db.VarChar(50)
+  title                   String    @db.VarChar(200)
+  type                    String    @db.VarChar(20) // first_article/incoming/process/final
+  inspectionDate          DateTime  @default(now())
+  inspectorId             Int       @db.UnsignedInt
+  sampleSize              Int       @default(0) @db.UnsignedInt
+  defectCount             Int       @default(0) @db.UnsignedInt
+  result                  String    @db.VarChar(20) // pass/fail/concession
+  relatedOrderId          Int?      @db.UnsignedInt
+  relatedNonconformanceId Int?      @db.UnsignedInt
+  findings                String?   @db.Text
+  remarks                 String?   @db.Text
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  project       PrjProject    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  inspector     SysUser       @relation("Inspector", fields: [inspectorId], references: [id])
+
+  @@index([projectId])
+  @@index([type])
+  @@map("quality_inspections")
+}
+
+// ============================================================
+// Layer 10: FMEA & Quality Engineering (Phase 6)
+// ============================================================
+
+// ==================== DFMEA ====================
+
+model FmeaDfmea {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId     Int       @db.UnsignedInt
+  fmeaNo        String    @unique @db.VarChar(50)
+  title         String    @db.VarChar(200)
+  version       Int       @default(1)
+  status        String    @default("draft") @db.VarChar(20) // draft/in_progress/reviewed/approved/released
+  scope         String?   @db.Text
+  teamLeaderId  Int?      @db.UnsignedInt
+  approvedById  Int?      @db.UnsignedInt
+  approvedAt    DateTime?
+  createdById   Int       @db.UnsignedInt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project     PrjProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  teamLeader  SysUser?          @relation("DfmeaTeamLeader", fields: [teamLeaderId], references: [id])
+  approvedBy  SysUser?          @relation("DfmeaApprover", fields: [approvedById], references: [id])
+  createdBy   SysUser           @relation("DfmeaCreator", fields: [createdById], references: [id])
+  items       FmeaDfmeaItem[]
+
+  @@index([projectId, status])
+  @@map("fmea_dfmeas")
+}
+
+model FmeaDfmeaItem {
+  id                    Int       @id @default(autoincrement()) @db.UnsignedInt
+  dfmeaId               Int       @db.UnsignedInt
+  parentId              Int?      @db.UnsignedInt
+  level                 String    @db.VarChar(20) // system/subsystem/component/function
+  itemName              String    @db.VarChar(200)
+  functionRequirement   String?   @db.Text
+  failureMode           String?   @db.Text
+  failureEffect         String?   @db.Text
+  severityRating        Int       @default(1) @db.TinyInt // S: 1-10
+  failureCause          String?   @db.Text
+  occurrenceRating      Int       @default(1) @db.TinyInt // O: 1-10
+  currentPreventionCtrl String?   @db.Text
+  currentDetectionCtrl  String?   @db.Text
+  detectionRating       Int       @default(1) @db.TinyInt // D: 1-10
+  apRating              String    @default("L") @db.VarChar(5) // H/M/L (Action Priority)
+  recommendedAction     String?   @db.Text
+  actionStatus          String    @default("pending") @db.VarChar(20) // pending/in_progress/completed/deferred
+  actionResponsibleId   Int?      @db.UnsignedInt
+  actionDueDate         DateTime?
+  revisedSeverity       Int?      @db.TinyInt
+  revisedOccurrence     Int?      @db.TinyInt
+  revisedDetection      Int?      @db.TinyInt
+  revisedAp             String?   @db.VarChar(5)
+  specialCharId         Int?      @db.UnsignedInt
+  sortOrder             Int       @default(0)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  dfmea         FmeaDfmea   @relation(fields: [dfmeaId], references: [id], onDelete: Cascade)
+  parent        FmeaDfmeaItem? @relation("DfmeaItemTree", fields: [parentId], references: [id])
+  children      FmeaDfmeaItem[] @relation("DfmeaItemTree")
+  actionOwner   SysUser?    @relation("DfmeaActionOwner", fields: [actionResponsibleId], references: [id])
+
+  @@index([dfmeaId])
+  @@map("fmea_dfmea_items")
+}
+
+// ==================== Process Flow ====================
+
+model FmeaProcessFlow {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId   Int       @db.UnsignedInt
+  flowNo      String    @unique @db.VarChar(50)
+  title       String    @db.VarChar(200)
+  status      String    @default("draft") @db.VarChar(20)
+  createdById Int       @db.UnsignedInt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project   PrjProject           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy SysUser              @relation("ProcessFlowCreator", fields: [createdById], references: [id])
+  steps     FmeaProcessFlowStep[]
+  pfmeas    FmeaPfmea[]
+
+  @@index([projectId])
+  @@map("fmea_process_flows")
+}
+
+model FmeaProcessFlowStep {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  flowId        Int       @db.UnsignedInt
+  stepNo        Int       @db.UnsignedInt
+  operationName String    @db.VarChar(200)
+  operationType String    @db.VarChar(30) // receiving/machining/assembly/testing/packaging/shipping/inspection/storage/other
+  equipment     String?   @db.VarChar(200)
+  description   String?   @db.Text
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  flow       FmeaProcessFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  pfmeaItems FmeaPfmeaItem[]
+
+  @@index([flowId])
+  @@map("fmea_process_flow_steps")
+}
+
+// ==================== PFMEA ====================
+
+model FmeaPfmea {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId      Int       @db.UnsignedInt
+  processFlowId  Int?      @db.UnsignedInt
+  fmeaNo         String    @unique @db.VarChar(50)
+  title          String    @db.VarChar(200)
+  version        Int       @default(1)
+  status         String    @default("draft") @db.VarChar(20)
+  teamLeaderId   Int?      @db.UnsignedInt
+  approvedById   Int?      @db.UnsignedInt
+  approvedAt     DateTime?
+  createdById    Int       @db.UnsignedInt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  project      PrjProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  processFlow  FmeaProcessFlow?  @relation(fields: [processFlowId], references: [id])
+  teamLeader   SysUser?          @relation("PfmeaTeamLeader", fields: [teamLeaderId], references: [id])
+  approvedBy   SysUser?          @relation("PfmeaApprover", fields: [approvedById], references: [id])
+  createdBy    SysUser           @relation("PfmeaCreator", fields: [createdById], references: [id])
+  items        FmeaPfmeaItem[]
+
+  @@index([projectId, status])
+  @@map("fmea_pfmeas")
+}
+
+model FmeaPfmeaItem {
+  id                    Int       @id @default(autoincrement()) @db.UnsignedInt
+  pfmeaId               Int       @db.UnsignedInt
+  processFlowStepId     Int?      @db.UnsignedInt
+  processStep           String    @db.VarChar(200)
+  failureMode           String?   @db.Text
+  failureEffect         String?   @db.Text
+  severityRating        Int       @default(1) @db.TinyInt
+  failureCause          String?   @db.Text
+  occurrenceRating      Int       @default(1) @db.TinyInt
+  currentPreventionCtrl String?   @db.Text
+  currentDetectionCtrl  String?   @db.Text
+  detectionRating       Int       @default(1) @db.TinyInt
+  apRating              String    @default("L") @db.VarChar(5)
+  recommendedAction     String?   @db.Text
+  actionStatus          String    @default("pending") @db.VarChar(20)
+  actionResponsibleId   Int?      @db.UnsignedInt
+  actionDueDate         DateTime?
+  revisedSeverity       Int?      @db.TinyInt
+  revisedOccurrence     Int?      @db.TinyInt
+  revisedDetection      Int?      @db.TinyInt
+  revisedAp             String?   @db.VarChar(5)
+  controlPlanItemId     Int?      @db.UnsignedInt
+  specialCharId         Int?      @db.UnsignedInt
+  sortOrder             Int       @default(0)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  pfmea             FmeaPfmea           @relation(fields: [pfmeaId], references: [id], onDelete: Cascade)
+  processFlowStep   FmeaProcessFlowStep? @relation(fields: [processFlowStepId], references: [id])
+  actionOwner       SysUser?            @relation("PfmeaActionOwner", fields: [actionResponsibleId], references: [id])
+
+  @@index([pfmeaId])
+  @@map("fmea_pfmea_items")
+}
+
+// ==================== Control Plan ====================
+
+model FmeaControlPlan {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId   Int       @db.UnsignedInt
+  cpNo        String    @unique @db.VarChar(50)
+  title       String    @db.VarChar(200)
+  cpType      String    @db.VarChar(30) // prototype/trial_production/mass_production
+  partNumber  String?   @db.VarChar(100)
+  partName    String?   @db.VarChar(200)
+  status      String    @default("draft") @db.VarChar(20)
+  version     Int       @default(1)
+  approvedById Int?     @db.UnsignedInt
+  approvedAt  DateTime?
+  createdById Int       @db.UnsignedInt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project    PrjProject    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  approvedBy SysUser?     @relation("CPApprover", fields: [approvedById], references: [id])
+  createdBy  SysUser      @relation("CPCreator", fields: [createdById], references: [id])
+  items      FmeaControlPlanItem[]
+
+  @@index([projectId, cpType])
+  @@map("fmea_control_plans")
+}
+
+model FmeaControlPlanItem {
+  id                  Int       @id @default(autoincrement()) @db.UnsignedInt
+  controlPlanId       Int       @db.UnsignedInt
+  partProcessName     String?   @db.VarChar(200)
+  characteristicDesc  String?   @db.VarChar(500)
+  specificationTol    String?   @db.VarChar(500)
+  measurementMethod   String?   @db.VarChar(200)
+  sampleSize          String?   @db.VarChar(50)
+  sampleFrequency     String?   @db.VarChar(50)
+  controlMethod       String?   @db.VarChar(200)
+  reactionPlan        String?   @db.Text
+  specialCharId       Int?      @db.UnsignedInt
+  sortOrder           Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  controlPlan FmeaControlPlan @relation(fields: [controlPlanId], references: [id], onDelete: Cascade)
+
+  @@index([controlPlanId])
+  @@map("fmea_control_plan_items")
+}
+
+// ==================== Special Characteristics ====================
+
+model FmeaSpecialCharacteristic {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId   Int       @db.UnsignedInt
+  charCode    String    @db.VarChar(50)
+  charName    String    @db.VarChar(200)
+  charType    String    @db.VarChar(10) // CC/SC
+  source      String?   @db.VarChar(30) // customer/internal/regulatory/design
+  description String?   @db.Text
+  status      String    @default("active") @db.VarChar(20) // active/superseded/deleted
+  createdById Int       @db.UnsignedInt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project   PrjProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy SysUser   @relation("SpecCharCreator", fields: [createdById], references: [id])
+
+  @@index([projectId, charType])
+  @@map("fmea_special_characteristics")
+}
+
+// ==================== SPC ====================
+
+model QeSpcStudy {
+  id                  Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId           Int       @db.UnsignedInt
+  studyNo             String    @unique @db.VarChar(50)
+  characteristicName  String    @db.VarChar(200)
+  chartType           String    @db.VarChar(20) // xbar_r/xbar_s/p/np/c/u/i_mr
+  subgroupSize        Int       @default(5) @db.UnsignedInt
+  usl                 Decimal?  @db.Decimal(14, 6)
+  lsl                 Decimal?  @db.Decimal(14, 6)
+  ucl                 Decimal?  @db.Decimal(14, 6)
+  lcl                 Decimal?  @db.Decimal(14, 6)
+  cp                  Decimal?  @db.Decimal(8, 4)
+  cpk                 Decimal?  @db.Decimal(8, 4)
+  pp                  Decimal?  @db.Decimal(8, 4)
+  ppk                 Decimal?  @db.Decimal(8, 4)
+  capabilityResult  String?   @db.VarChar(20) // capable/marginal/incapable
+  specialCharId       Int?      @db.UnsignedInt
+  createdById         Int       @db.UnsignedInt
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  project   PrjProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy SysUser           @relation("SpcStudyCreator", fields: [createdById], references: [id])
+  dataPoints QeSpcDataPoint[]
+
+  @@index([projectId])
+  @@map("qe_spc_studies")
+}
+
+model QeSpcDataPoint {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  studyId       Int       @db.UnsignedInt
+  subgroupNo    Int       @db.UnsignedInt
+  sampleValues  Json?     // array of individual measurements
+  subgroupMean  Decimal?  @db.Decimal(14, 6)
+  subgroupRange Decimal?  @db.Decimal(14, 6)
+  subgroupStd   Decimal?  @db.Decimal(14, 6)
+  isOutOfControl Boolean  @default(false)
+  violationRule String?   @db.VarChar(50)
+  createdAt     DateTime  @default(now())
+
+  study QeSpcStudy @relation(fields: [studyId], references: [id], onDelete: Cascade)
+
+  @@index([studyId, subgroupNo])
+  @@map("qe_spc_data_points")
+}
+
+// ==================== MSA ====================
+
+model QeMsaStudy {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  studyNo         String    @unique @db.VarChar(50)
+  studyType       String    @db.VarChar(20) // grr/bias/linearity/stability/attribute
+  gageName        String    @db.VarChar(200)
+  numOperators    Int       @default(3) @db.UnsignedInt
+  numTrials       Int       @default(3) @db.UnsignedInt
+  numParts        Int       @default(10) @db.UnsignedInt
+  tolerance       Decimal?  @db.Decimal(14, 6)
+  evPercent       Decimal?  @db.Decimal(8, 4) // Equipment Variation %
+  avPercent       Decimal?  @db.Decimal(8, 4) // Appraiser Variation %
+  grrPercent      Decimal?  @db.Decimal(8, 4) // GR&R %
+  pvPercent       Decimal?  @db.Decimal(8, 4) // Part Variation %
+  tvPercent       Decimal?  @db.Decimal(8, 4) // Total Variation %
+  ndc             Int?      @db.UnsignedInt // Number of Distinct Categories
+  biasValue       Decimal?  @db.Decimal(14, 6)
+  acceptanceResult String?  @db.VarChar(20) // acceptable/marginal/unacceptable
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project      PrjProject          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy    SysUser             @relation("MsaStudyCreator", fields: [createdById], references: [id])
+  measurements QeMsaMeasurement[]
+
+  @@index([projectId])
+  @@map("qe_msa_studies")
+}
+
+model QeMsaMeasurement {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  studyId         Int       @db.UnsignedInt
+  operatorId      Int       @db.UnsignedInt
+  partId          Int       @db.UnsignedInt
+  trialNo         Int       @db.UnsignedInt
+  measuredValue   Decimal   @db.Decimal(14, 6)
+  referenceValue  Decimal?  @db.Decimal(14, 6)
+  createdAt       DateTime  @default(now())
+
+  study    QeMsaStudy @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  operator SysUser    @relation("MsaOperator", fields: [operatorId], references: [id])
+
+  @@index([studyId])
+  @@map("qe_msa_measurements")
+}
+
+// ==================== FMEA Knowledge Base ====================
+
+model FmeaKnowledgeBase {
+  id                Int       @id @default(autoincrement()) @db.UnsignedInt
+  entryType         String    @db.VarChar(30) // failure_mode/cause/control/severity_ref/occurrence_ref/detection_ref
+  category          String?   @db.VarChar(100)
+  title             String    @db.VarChar(200)
+  description       String?   @db.Text
+  suggestedSeverity Int?      @db.TinyInt
+  suggestedOccurrence Int?    @db.TinyInt
+  suggestedDetection  Int?    @db.TinyInt
+  applicableFmeaType String?  @db.VarChar(20) // dfmea/pfmea/both
+  tags              String?   @db.VarChar(500)
+  usageCount        Int       @default(0) @db.UnsignedInt
+  createdById       Int       @db.UnsignedInt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  createdBy SysUser @relation("KBEntryCreator", fields: [createdById], references: [id])
+
+  @@index([entryType, category])
+  @@index([tags(length: 100)])
+  @@map("fmea_knowledge_base")
+}
+
+// ============================================================
+// Phase 7: Change Management (ECR/ECN)
+// ============================================================
+
+model ChgEcr {
+  id                      Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId               Int       @db.UnsignedInt
+  ecrCode                 String    @unique @db.VarChar(50)
+  title                   String    @db.VarChar(200)
+  description             String?   @db.Text
+  changeType              String    @db.VarChar(20) // design/process/material/specification/plan/schedule/cost
+  priority                String    @default("general") @db.VarChar(10) // critical/major/general/minor
+  status                  String    @default("draft") @db.VarChar(20) // draft/submitted/impact_analysis/ccb_review/approved/rejected/closed
+  reason                  String?   @db.Text
+  currentCondition        String?   @db.Text
+  proposedChange          String?   @db.Text
+  requesterId             Int       @db.UnsignedInt
+  assignedToId            Int?      @db.UnsignedInt
+  submittedAt             DateTime?
+  approvedAt              DateTime?
+  closedAt                DateTime?
+  targetDate              DateTime?
+  estimatedCost           Decimal?  @db.Decimal(12, 2)
+  safetyRelated           Boolean   @default(false)
+  customerNotified        Boolean   @default(false)
+  ppapResubmissionRequired Boolean  @default(false)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  project       PrjProject          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requester     SysUser             @relation("EcrRequester", fields: [requesterId], references: [id])
+  assignedTo    SysUser?            @relation("EcrAssignee", fields: [assignedToId], references: [id])
+  impactItems   ChgEcrImpactItem[]
+  ccbReviews    ChgCcbReview[]
+  ecns          ChgEcn[]
+
+  @@index([projectId, status])
+  @@index([changeType])
+  @@index([priority])
+  @@map("chg_ecrs")
+}
+
+model ChgEcrImpactItem {
+  id             Int      @id @default(autoincrement()) @db.UnsignedInt
+  ecrId          Int      @db.UnsignedInt
+  impactArea     String   @db.VarChar(30) // bom/fmea/sample/cost/document/tooling/safety/process/control_plan/spc/msa/ppap
+  affectedItem   String?  @db.VarChar(200)
+  impactLevel    String   @db.VarChar(10) // high/medium/low
+  description    String?  @db.Text
+  actionRequired String?  @db.Text
+  relatedDocId   Int?     @db.UnsignedInt
+  sortOrder      Int      @default(0) @db.TinyInt
+
+  ecr            ChgEcr   @relation(fields: [ecrId], references: [id], onDelete: Cascade)
+
+  @@index([ecrId])
+  @@map("chg_ecr_impact_items")
+}
+
+model ChgCcbReview {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  ecrId          Int       @db.UnsignedInt
+  reviewDate     DateTime  @default(now())
+  reviewerId     Int       @db.UnsignedInt
+  decision       String    @db.VarChar(20) // approve/reject/conditional/defer
+  opinion        String?   @db.Text
+  conditions     String?   @db.Text
+  nextReviewDate DateTime?
+
+  ecr            ChgEcr    @relation(fields: [ecrId], references: [id], onDelete: Cascade)
+  reviewer       SysUser   @relation("CcbReviewer", fields: [reviewerId], references: [id])
+
+  @@index([ecrId])
+  @@map("chg_ccb_reviews")
+}
+
+model ChgEcn {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId     Int       @db.UnsignedInt
+  ecnCode       String    @unique @db.VarChar(50)
+  ecrId         Int       @db.UnsignedInt
+  title         String    @db.VarChar(200)
+  description   String?   @db.Text
+  status        String    @default("planning") @db.VarChar(20) // planning/executing/verifying/closed
+  effectiveDate DateTime?
+  issuedById    Int       @db.UnsignedInt
+  verifiedById  Int?      @db.UnsignedInt
+  verifiedAt    DateTime?
+  closedAt      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project       PrjProject      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ecr           ChgEcr          @relation(fields: [ecrId], references: [id])
+  issuedBy      SysUser         @relation("EcnIssuer", fields: [issuedById], references: [id])
+  verifiedBy    SysUser?        @relation("EcnVerifier", fields: [verifiedById], references: [id])
+  actionItems   ChgEcnActionItem[]
+
+  @@index([projectId, status])
+  @@index([ecrId])
+  @@map("chg_ecns")
+}
+
+model ChgEcnActionItem {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  ecnId           Int       @db.UnsignedInt
+  actionType      String    @db.VarChar(30) // update_bom/update_fmea/update_control_plan/update_drawing/update_process/update_ppap/update_document/tooling_change/sample_verification/other
+  description     String    @db.VarChar(500)
+  assignedToId    Int?      @db.UnsignedInt
+  status          String    @default("pending") @db.VarChar(20) // pending/in_progress/completed/verified
+  dueDate         DateTime?
+  completedAt     DateTime?
+  verificationNote String?  @db.Text
+  sortOrder       Int       @default(0) @db.TinyInt
+
+  ecn             ChgEcn    @relation(fields: [ecnId], references: [id], onDelete: Cascade)
+  assignedTo      SysUser?  @relation("EcnActionAssignee", fields: [assignedToId], references: [id])
+
+  @@index([ecnId])
+  @@map("chg_ecn_action_items")
 }

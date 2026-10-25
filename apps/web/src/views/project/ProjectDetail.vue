@@ -7,6 +7,7 @@
         <el-button style="margin-left: 12px" @click="$router.push(`/projects/${project?.id}/schedule`)">进度计划</el-button>
         <el-button @click="$router.push(`/projects/${project?.id}/risks`)">风险管理</el-button>
         <el-button @click="$router.push(`/projects/${project?.id}/milestones`)">里程碑</el-button>
+        <el-button type="warning" @click="$router.push(`/projects/${project?.id}/requirements`)">A-SPICE 需求</el-button>
         <el-button @click="$router.push('/projects')">返回列表</el-button>
       </div>
     </div>

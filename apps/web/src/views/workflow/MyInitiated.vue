@@ -20,7 +20,7 @@
       </el-table-column>
       <el-table-column label="操作" width="100" fixed="right">
         <template #default="{ row }">
-          <el-button type="primary" link size="small" @click="showDetail(row.id)">详情</el-button>
+          <el-button type="primary" link size="small" @click="$router.push(`/workflow/instances/${row.id}`)">跟踪</el-button>
         </template>
       </el-table-column>
     </el-table>

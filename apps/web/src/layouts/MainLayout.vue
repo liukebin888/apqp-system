@@ -31,9 +31,56 @@
             <el-icon><Stamp /></el-icon>
             <span>流程管理</span>
           </template>
+          <el-menu-item index="/workflow/definitions">流程定义</el-menu-item>
           <el-menu-item index="/workflow/approval-center">审批中心</el-menu-item>
           <el-menu-item index="/workflow/my-initiated">我发起的</el-menu-item>
         </el-sub-menu>
+
+        <el-menu-item index="/documents">
+          <el-icon><Document /></el-icon>
+          <template #title>文档管理</template>
+        </el-menu-item>
+
+        <el-menu-item index="/pre-project">
+          <el-icon><TrendCharts /></el-icon>
+          <template #title>预立项管理</template>
+        </el-menu-item>
+
+        <el-menu-item index="/gate-reviews">
+          <el-icon><Checked /></el-icon>
+          <template #title>Gate 评审</template>
+        </el-menu-item>
+
+        <el-sub-menu index="ots-ppap">
+          <template #title>
+            <el-icon><Box /></el-icon>
+            <span>OTS/PPAP</span>
+          </template>
+          <el-menu-item index="/ots">OTS 样件管理</el-menu-item>
+          <el-menu-item index="/ppap">PPAP 提报管理</el-menu-item>
+        </el-sub-menu>
+
+        <el-menu-item index="/cost">
+          <el-icon><Money /></el-icon>
+          <template #title>成本管理</template>
+        </el-menu-item>
+
+        <el-menu-item index="/procurement">
+          <el-icon><ShoppingCart /></el-icon>
+          <template #title>采购管理</template>
+        </el-menu-item>
+        <el-menu-item index="/quality">
+          <el-icon><CircleCheck /></el-icon>
+          <template #title>质量管理</template>
+        </el-menu-item>
+        <el-menu-item index="/quality-engineering">
+          <el-icon><DataAnalysis /></el-icon>
+          <template #title>质量工程</template>
+        </el-menu-item>
+        <el-menu-item index="/change-management">
+          <el-icon><Switch /></el-icon>
+          <template #title>工程变更管理</template>
+        </el-menu-item>
 
         <el-sub-menu index="master-data">
           <template #title>
