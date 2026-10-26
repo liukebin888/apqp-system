@@ -365,4 +365,176 @@ export class QualityController {
       message: 'success',
     }
   }
+
+  // ==================== Escalation Endpoints ====================
+
+  @Get('problems/:id/escalation-history')
+  async getEscalationHistory(@Param('id') id: string) {
+    return {
+      code: 0,
+      data: await this.service.getEscalationHistory(+id),
+      message: 'success',
+    }
+  }
+
+  @Put('problems/:id/manual-escalate')
+  async manualEscalate(
+    @Param('id') id: string,
+    @Body() body: { level: string },
+    @Req() req: any,
+  ) {
+    const userId = req.user?.userId || 1
+    return {
+      code: 0,
+      data: await this.service.manualEscalate(+id, userId, body.level),
+      message: 'success',
+    }
+  }
+
+  // ==================== PPM Record Endpoints ====================
+
+  @Get('ppm-records')
+  async findAllPpmRecords(
+    @Query('projectId') projectId?: string,
+    @Query('periodType') periodType?: string,
+  ) {
+    return {
+      code: 0,
+      data: await this.service.findAllPpmRecords({
+        projectId: projectId ? +projectId : undefined,
+        periodType,
+      }),
+      message: 'success',
+    }
+  }
+
+  @Get('ppm-records/trend')
+  async getPpmTrend(
+    @Query('projectId') projectId?: string,
+    @Query('months') months?: string,
+  ) {
+    return {
+      code: 0,
+      data: await this.service.getPpmTrend(
+        projectId ? +projectId : undefined,
+        months ? +months : 12,
+      ),
+      message: 'success',
+    }
+  }
+
+  @Get('ppm-records/compliance')
+  async getPpmCompliance(@Query('projectId') projectId?: string) {
+    return {
+      code: 0,
+      data: await this.service.getPpmCompliance(
+        projectId ? +projectId : undefined,
+      ),
+      message: 'success',
+    }
+  }
+
+  @Post('ppm-records/calculate')
+  async calculatePpm(
+    @Body() body: { projectId: number; period: string },
+    @Req() req: any,
+  ) {
+    const userId = req.user?.userId || 1
+    return {
+      code: 0,
+      data: await this.service.calculatePpm(body.projectId, body.period, userId),
+      message: 'success',
+    }
+  }
+
+  @Get('ppm-records/:id')
+  async findOnePpmRecord(@Param('id') id: string) {
+    return {
+      code: 0,
+      data: await this.service.findOnePpmRecord(+id),
+      message: 'success',
+    }
+  }
+
+  @Post('ppm-records')
+  async createPpmRecord(@Body() body: any, @Req() req: any) {
+    const userId = req.user?.userId || 1
+    return {
+      code: 0,
+      data: await this.service.createPpmRecord(body, userId),
+      message: 'success',
+    }
+  }
+
+  @Put('ppm-records/:id')
+  async updatePpmRecord(@Param('id') id: string, @Body() body: any) {
+    return {
+      code: 0,
+      data: await this.service.updatePpmRecord(+id, body),
+      message: 'success',
+    }
+  }
+
+  @Delete('ppm-records/:id')
+  async deletePpmRecord(@Param('id') id: string) {
+    await this.service.deletePpmRecord(+id)
+    return { code: 0, data: null, message: 'success' }
+  }
+
+  // ==================== Enhanced Statistics Endpoints ====================
+
+  @Get('stats/enhanced')
+  async getEnhancedStats() {
+    return {
+      code: 0,
+      data: await this.service.getEnhancedStats(),
+      message: 'success',
+    }
+  }
+
+  @Get('stats/8d-closure-trend')
+  async getEightDClosureTrend(@Query('months') months?: string) {
+    return {
+      code: 0,
+      data: await this.service.getEightDClosureTrend(months ? +months : 6),
+      message: 'success',
+    }
+  }
+
+  @Get('stats/problem-aging')
+  async getProblemAging(@Query('projectId') projectId?: string) {
+    return {
+      code: 0,
+      data: await this.service.getProblemAgingAnalysis(
+        projectId ? +projectId : undefined,
+      ),
+      message: 'success',
+    }
+  }
+
+  @Get('stats/quality-cost')
+  async getQualityCost(@Query('projectId') projectId?: string) {
+    return {
+      code: 0,
+      data: await this.service.getQualityCostSummary(
+        projectId ? +projectId : undefined,
+      ),
+      message: 'success',
+    }
+  }
+
+  @Get('stats/top-defects')
+  async getTopDefects(
+    @Query('limit') limit?: string,
+    @Query('projectId') projectId?: string,
+  ) {
+    return {
+      code: 0,
+      data: await this.service.getTopDefectTypes(
+        limit ? +limit : 10,
+        projectId ? +projectId : undefined,
+      ),
+      message: 'success',
+    }
+  }
 }

@@ -675,4 +675,413 @@ export class QualityService {
 
     return { bySeverity, byClassification, bySource, byStatus, recentProblems }
   }
+
+  // ==================== Escalation History ====================
+
+  async getEscalationHistory(problemId: number) {
+    return this.prisma.qualityEscalationHistory.findMany({
+      where: { problemId },
+      include: {
+        triggeredByUser: { select: { id: true, realName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
+  async manualEscalate(problemId: number, userId: number, level: string) {
+    const problem = await this.prisma.qualityProblem.findUniqueOrThrow({
+      where: { id: problemId },
+      include: { project: { select: { id: true, projectName: true } } },
+    })
+
+    const levelMap: Record<string, { escalateTo: string; description: string }> = {
+      L1: { escalateTo: '总经理', description: '手动升级至总经理' },
+      L2: { escalateTo: '部门经理', description: '手动升级至部门经理' },
+      L3: { escalateTo: '项目经理', description: '手动升级至项目经理' },
+    }
+    const rule = levelMap[level] || levelMap.L3
+    const daysOpen = Math.floor(
+      (Date.now() - problem.createdAt.getTime()) / 86400000,
+    )
+
+    const fromStatus = problem.status
+
+    const alertRecord = await this.prisma.msgAlertRecord.create({
+      data: {
+        targetBizType: 'quality_escalation',
+        targetBizId: problemId,
+        severity: level === 'L1' ? 'critical' : 'warning',
+        title: `质量问题手动升级 [${level}]`,
+        content: `${problem.project.projectName} - ${problem.title} 手动升级至${rule.escalateTo}`,
+        status: 'triggered',
+      },
+    })
+
+    const history = await this.prisma.qualityEscalationHistory.create({
+      data: {
+        problemId,
+        fromStatus,
+        toStatus: 'escalated',
+        escalationLevel: level,
+        severity: problem.severity,
+        daysOpen,
+        escalateTo: rule.escalateTo,
+        alertRecordId: alertRecord.id,
+        triggeredBy: 'manual',
+        triggeredById: userId,
+        remark: rule.description,
+      },
+      include: {
+        triggeredByUser: { select: { id: true, realName: true } },
+      },
+    })
+
+    await this.prisma.qualityProblem.update({
+      where: { id: problemId },
+      data: { status: 'escalated' },
+    })
+
+    if (problem.ownerId) {
+      await this.prisma.msgNotification.create({
+        data: {
+          userId: problem.ownerId,
+          type: 'alert',
+          title: `质量问题手动升级通知 [${level}]`,
+          content: `您负责的问题「${problem.title}」已被手动升级至${rule.escalateTo}`,
+          bizType: 'quality_escalation',
+          bizId: problemId,
+        },
+      })
+    }
+
+    return history
+  }
+
+  // ==================== PPM Records ====================
+
+  async findAllPpmRecords(params: { projectId?: number; periodType?: string }) {
+    const where: any = {}
+    if (params.projectId) where.projectId = params.projectId
+    if (params.periodType) where.periodType = params.periodType
+
+    return this.prisma.qualityPpmRecord.findMany({
+      where,
+      include: {
+        project: { select: { id: true, projectName: true, projectLevel: true } },
+        createdBy: { select: { id: true, realName: true } },
+      },
+      orderBy: { period: 'desc' },
+    })
+  }
+
+  async findOnePpmRecord(id: number) {
+    return this.prisma.qualityPpmRecord.findUniqueOrThrow({
+      where: { id },
+      include: {
+        project: { select: { id: true, projectName: true, projectLevel: true } },
+        createdBy: { select: { id: true, realName: true } },
+      },
+    })
+  }
+
+  async createPpmRecord(data: any, userId: number) {
+    const ppmTargets: Record<string, number> = { L1: 10, L2: 50, L3: 100, L4: 500, L5: 1000 }
+
+    const project = await this.prisma.prjProject.findUniqueOrThrow({
+      where: { id: data.projectId },
+      select: { projectLevel: true },
+    })
+
+    const totalParts = data.totalParts || 0
+    const defectParts = data.defectParts || 0
+    const ppmValue = totalParts > 0 ? (defectParts / totalParts) * 1000000 : 0
+    const targetPpm = ppmTargets[project.projectLevel] || 100
+    const status = ppmValue <= targetPpm ? 'on_track' : ppmValue <= targetPpm * 1.5 ? 'warning' : 'exceeded'
+
+    return this.prisma.qualityPpmRecord.create({
+      data: {
+        projectId: data.projectId,
+        period: data.period,
+        periodType: data.periodType || 'monthly',
+        totalParts,
+        defectParts,
+        ppmValue,
+        targetPpm,
+        status,
+        createdById: userId,
+      },
+      include: {
+        project: { select: { id: true, projectName: true, projectLevel: true } },
+        createdBy: { select: { id: true, realName: true } },
+      },
+    })
+  }
+
+  async updatePpmRecord(id: number, data: any) {
+    const existing = await this.prisma.qualityPpmRecord.findUniqueOrThrow({
+      where: { id },
+      include: { project: { select: { projectLevel: true } } },
+    })
+
+    const ppmTargets: Record<string, number> = { L1: 10, L2: 50, L3: 100, L4: 500, L5: 1000 }
+    const totalParts = data.totalParts ?? existing.totalParts
+    const defectParts = data.defectParts ?? existing.defectParts
+    const ppmValue = totalParts > 0 ? (defectParts / totalParts) * 1000000 : 0
+    const targetPpm = ppmTargets[existing.project.projectLevel] || 100
+    const status = ppmValue <= targetPpm ? 'on_track' : ppmValue <= targetPpm * 1.5 ? 'warning' : 'exceeded'
+
+    return this.prisma.qualityPpmRecord.update({
+      where: { id },
+      data: {
+        period: data.period,
+        periodType: data.periodType,
+        totalParts,
+        defectParts,
+        ppmValue,
+        targetPpm,
+        status,
+      },
+      include: {
+        project: { select: { id: true, projectName: true, projectLevel: true } },
+        createdBy: { select: { id: true, realName: true } },
+      },
+    })
+  }
+
+  async deletePpmRecord(id: number) {
+    return this.prisma.qualityPpmRecord.delete({ where: { id } })
+  }
+
+  async calculatePpm(projectId: number, period: string, userId: number) {
+    const ncs = await this.prisma.qualityNonconformance.findMany({
+      where: { projectId },
+      select: { quantity: true, defectQuantity: true, createdAt: true },
+    })
+
+    const periodDate = new Date(period + '-01')
+    const filtered = ncs.filter((nc) => {
+      const ncMonth = `${nc.createdAt.getFullYear()}-${String(nc.createdAt.getMonth() + 1).padStart(2, '0')}`
+      return ncMonth === period
+    })
+
+    const totalParts = filtered.reduce((sum, nc) => sum + nc.quantity, 0)
+    const defectParts = filtered.reduce((sum, nc) => sum + nc.defectQuantity, 0)
+
+    return this.createPpmRecord(
+      { projectId, period, periodType: 'monthly', totalParts, defectParts },
+      userId,
+    )
+  }
+
+  async getPpmTrend(projectId?: number, months: number = 12) {
+    const where: any = {}
+    if (projectId) where.projectId = projectId
+
+    const records = await this.prisma.qualityPpmRecord.findMany({
+      where,
+      include: {
+        project: { select: { projectName: true, projectLevel: true } },
+      },
+      orderBy: { period: 'asc' },
+    })
+
+    const cutoff = new Date()
+    cutoff.setMonth(cutoff.getMonth() - months)
+
+    return records
+      .filter((r) => new Date(r.period + '-01') >= cutoff)
+      .map((r) => ({
+        period: r.period,
+        ppmValue: Number(r.ppmValue),
+        targetPpm: Number(r.targetPpm),
+        status: r.status,
+        projectName: r.project.projectName,
+      }))
+  }
+
+  async getPpmCompliance(projectId?: number) {
+    const where: any = {}
+    if (projectId) where.projectId = projectId
+
+    const records = await this.prisma.qualityPpmRecord.findMany({ where })
+
+    const total = records.length
+    const onTrack = records.filter((r) => r.status === 'on_track').length
+    const warning = records.filter((r) => r.status === 'warning').length
+    const exceeded = records.filter((r) => r.status === 'exceeded').length
+
+    return {
+      total,
+      onTrack,
+      warning,
+      exceeded,
+      complianceRate: total > 0 ? Math.round((onTrack / total) * 100) : 0,
+    }
+  }
+
+  // ==================== Enhanced Statistics ====================
+
+  async getEnhancedStats() {
+    const [
+      totalProblems,
+      openProblems,
+      criticalProblems,
+      total8D,
+      completed8D,
+      totalNC,
+      openNC,
+      totalCAPA,
+      openCAPA,
+      verifiedCAPA,
+      totalInspections,
+      failedInspections,
+      totalEscalations,
+      avgClosureDays,
+    ] = await Promise.all([
+      this.prisma.qualityProblem.count(),
+      this.prisma.qualityProblem.count({ where: { status: { notIn: ['closed', 'escalated'] } } }),
+      this.prisma.qualityProblem.count({ where: { severity: 'critical' } }),
+      this.prisma.quality8DReport.count(),
+      this.prisma.quality8DReport.count({ where: { status: 'completed' } }),
+      this.prisma.qualityNonconformance.count(),
+      this.prisma.qualityNonconformance.count({ where: { disposition: null } }),
+      this.prisma.qualityCAPA.count(),
+      this.prisma.qualityCAPA.count({ where: { status: { notIn: ['verified', 'closed'] } } }),
+      this.prisma.qualityCAPA.count({ where: { status: 'verified' } }),
+      this.prisma.qualityInspection.count(),
+      this.prisma.qualityInspection.count({ where: { result: 'fail' } }),
+      this.prisma.qualityEscalationHistory.count(),
+      this.getAvgClosureDays(),
+    ])
+
+    return {
+      problems: { total: totalProblems, open: openProblems, critical: criticalProblems },
+      eightD: { total: total8D, completed: completed8D, closureRate: total8D > 0 ? Math.round((completed8D / total8D) * 100) : 0 },
+      nonconformances: { total: totalNC, open: openNC },
+      capas: { total: totalCAPA, open: openCAPA, verified: verifiedCAPA },
+      inspections: { total: totalInspections, failed: failedInspections, passRate: totalInspections > 0 ? Math.round(((totalInspections - failedInspections) / totalInspections) * 100) : 0 },
+      escalations: { total: totalEscalations },
+      avgClosureDays,
+    }
+  }
+
+  private async getAvgClosureDays(): Promise<number> {
+    const closed = await this.prisma.qualityProblem.findMany({
+      where: { status: 'closed', closedAt: { not: null } },
+      select: { createdAt: true, closedAt: true },
+    })
+    if (closed.length === 0) return 0
+    const totalDays = closed.reduce((sum, p) => {
+      return sum + Math.floor((p.closedAt!.getTime() - p.createdAt.getTime()) / 86400000)
+    }, 0)
+    return Math.round(totalDays / closed.length)
+  }
+
+  async getEightDClosureTrend(months: number = 6) {
+    const cutoff = new Date()
+    cutoff.setMonth(cutoff.getMonth() - months)
+
+    const [created, completed] = await Promise.all([
+      this.prisma.quality8DReport.findMany({
+        where: { createdAt: { gte: cutoff } },
+        select: { createdAt: true },
+      }),
+      this.prisma.quality8DReport.findMany({
+        where: { status: 'completed', updatedAt: { gte: cutoff } },
+        select: { updatedAt: true },
+      }),
+    ])
+
+    const trend: Record<string, { created: number; completed: number }> = {}
+    for (let i = months; i >= 0; i--) {
+      const d = new Date()
+      d.setMonth(d.getMonth() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      trend[key] = { created: 0, completed: 0 }
+    }
+
+    for (const r of created) {
+      const key = `${r.createdAt.getFullYear()}-${String(r.createdAt.getMonth() + 1).padStart(2, '0')}`
+      if (trend[key]) trend[key].created++
+    }
+    for (const r of completed) {
+      const key = `${r.updatedAt.getFullYear()}-${String(r.updatedAt.getMonth() + 1).padStart(2, '0')}`
+      if (trend[key]) trend[key].completed++
+    }
+
+    return Object.entries(trend).map(([month, data]) => ({
+      month,
+      ...data,
+    }))
+  }
+
+  async getProblemAgingAnalysis(projectId?: number) {
+    const where: any = { status: { notIn: ['closed', 'escalated'] } }
+    if (projectId) where.projectId = projectId
+
+    const problems = await this.prisma.qualityProblem.findMany({
+      where,
+      select: { createdAt: true, severity: true },
+    })
+
+    const buckets = { '0-3': 0, '4-7': 0, '8-14': 0, '15-30': 0, '30+': 0 }
+    const now = Date.now()
+
+    for (const p of problems) {
+      const days = Math.floor((now - p.createdAt.getTime()) / 86400000)
+      if (days <= 3) buckets['0-3']++
+      else if (days <= 7) buckets['4-7']++
+      else if (days <= 14) buckets['8-14']++
+      else if (days <= 30) buckets['15-30']++
+      else buckets['30+']++
+    }
+
+    return buckets
+  }
+
+  async getQualityCostSummary(projectId?: number) {
+    const where: any = {}
+    if (projectId) where.projectId = projectId
+
+    const ncs = await this.prisma.qualityNonconformance.findMany({
+      where,
+      select: { defectType: true, costImpact: true, disposition: true },
+    })
+
+    const totalCost = ncs.reduce((sum, nc) => sum + Number(nc.costImpact || 0), 0)
+    const byDisposition: Record<string, number> = {}
+    const byType: Record<string, number> = {}
+
+    for (const nc of ncs) {
+      const cost = Number(nc.costImpact || 0)
+      if (nc.disposition) {
+        byDisposition[nc.disposition] = (byDisposition[nc.disposition] || 0) + cost
+      }
+      byType[nc.defectType] = (byType[nc.defectType] || 0) + cost
+    }
+
+    return { totalCost, byDisposition, byType, recordCount: ncs.length }
+  }
+
+  async getTopDefectTypes(limit: number = 10, projectId?: number) {
+    const where: any = {}
+    if (projectId) where.projectId = projectId
+
+    const ncs = await this.prisma.qualityNonconformance.findMany({
+      where,
+      select: { defectType: true, quantity: true, defectQuantity: true },
+    })
+
+    const grouped: Record<string, { count: number; defectQty: number }> = {}
+    for (const nc of ncs) {
+      if (!grouped[nc.defectType]) grouped[nc.defectType] = { count: 0, defectQty: 0 }
+      grouped[nc.defectType].count++
+      grouped[nc.defectType].defectQty += nc.defectQuantity
+    }
+
+    return Object.entries(grouped)
+      .map(([type, data]) => ({ defectType: type, ...data }))
+      .sort((a, b) => b.defectQty - a.defectQty)
+      .slice(0, limit)
+  }
 }

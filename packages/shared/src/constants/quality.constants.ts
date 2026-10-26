@@ -115,3 +115,42 @@ export const ESCALATION_RULES = [
   { level: 'L2', severity: 'major', days: 7, escalateTo: '部门经理', description: '重大问题7天未关闭→升级至部门经理' },
   { level: 'L3', severity: 'minor', days: 14, escalateTo: '项目经理', description: '一般问题14天未关闭→升级至项目经理' },
 ] as const
+
+export const ESCALATION_LEVEL = {
+  L1: '总经理',
+  L2: '部门经理',
+  L3: '项目经理',
+} as const
+
+export type EscalationLevel = keyof typeof ESCALATION_LEVEL
+
+export const ESCALATION_TRIGGER_TYPE = {
+  auto: '自动',
+  manual: '手动',
+} as const
+
+export type EscalationTriggerType = keyof typeof ESCALATION_TRIGGER_TYPE
+
+export const PPM_TARGETS: Record<string, number> = {
+  L1: 10,
+  L2: 50,
+  L3: 100,
+  L4: 500,
+  L5: 1000,
+} as const
+
+export const PPM_STATUS = {
+  on_track: '达标',
+  warning: '预警',
+  exceeded: '超标',
+} as const
+
+export type PpmStatus = keyof typeof PPM_STATUS
+
+export const PPM_PERIOD_TYPE = {
+  monthly: '月度',
+  quarterly: '季度',
+  yearly: '年度',
+} as const
+
+export type PpmPeriodType = keyof typeof PPM_PERIOD_TYPE

@@ -19,6 +19,7 @@ import { ProcurementModule } from './modules/procurement/procurement.module'
 import { QualityModule } from './modules/quality/quality.module'
 import { FmeaModule } from './modules/fmea/fmea.module'
 import { ChangeModule } from './modules/change/change.module'
+import { DashboardModule } from './modules/dashboard/dashboard.module'
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ChangeModule } from './modules/change/change.module'
     QualityModule,
     FmeaModule,
     ChangeModule,
+    DashboardModule,
   ],
   providers: [PrismaService],
   exports: [PrismaService],

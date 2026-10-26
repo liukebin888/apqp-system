@@ -85,12 +85,14 @@
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="240" fixed="right">
+          <el-table-column label="操作" width="300" fixed="right">
             <template #default="{ row }">
               <el-button link type="primary" size="small" @click="viewProblem(row)">详情</el-button>
               <el-button v-if="row.status === 'new'" link type="primary" size="small" @click="assignProblem(row)">分配</el-button>
               <el-button v-if="!row.has8DReport && row.status !== 'closed'" link type="warning" size="small" @click="create8D(row)">创建8D</el-button>
               <el-button v-if="row.status !== 'closed'" link type="success" size="small" @click="closeProblem(row)">关闭</el-button>
+              <el-button link type="danger" size="small" @click="showEscalationHistory(row)">升级历史</el-button>
+              <el-button v-if="row.status !== 'closed' && row.status !== 'escalated'" link type="warning" size="small" @click="showManualEscalate(row)">手动升级</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -250,10 +252,132 @@
         </el-table>
       </el-tab-pane>
 
+      <!-- ==================== PPM追踪 ==================== -->
+      <el-tab-pane label="PPM追踪" name="ppm">
+        <div class="tab-toolbar">
+          <el-button type="primary" :icon="Plus" @click="showCreatePPM = true">新建PPM记录</el-button>
+          <el-button @click="loadPpmTrend">自动计算</el-button>
+          <el-select v-model="ppmFilter.periodType" placeholder="周期类型" clearable @change="loadPpmRecords">
+            <el-option label="月度" value="monthly" />
+            <el-option label="季度" value="quarterly" />
+            <el-option label="年度" value="yearly" />
+          </el-select>
+        </div>
+        <el-row :gutter="16" class="kpi-row" style="margin-bottom: 16px">
+          <el-col :span="6">
+            <el-card shadow="hover" class="kpi-card">
+              <div class="kpi-value">{{ ppmCompliance.onTrack || 0 }}</div>
+              <div class="kpi-label">达标记录</div>
+            </el-card>
+          </el-col>
+          <el-col :span="6">
+            <el-card shadow="hover" class="kpi-card">
+              <div class="kpi-value" style="color: #e6a23c">{{ ppmCompliance.warning || 0 }}</div>
+              <div class="kpi-label">预警记录</div>
+            </el-card>
+          </el-col>
+          <el-col :span="6">
+            <el-card shadow="hover" class="kpi-card">
+              <div class="kpi-value" style="color: #f56c6c">{{ ppmCompliance.exceeded || 0 }}</div>
+              <div class="kpi-label">超标记录</div>
+            </el-card>
+          </el-col>
+          <el-col :span="6">
+            <el-card shadow="hover" class="kpi-card">
+              <div class="kpi-value">{{ ppmCompliance.complianceRate || 0 }}%</div>
+              <div class="kpi-label">达标率</div>
+            </el-card>
+          </el-col>
+        </el-row>
+        <el-table :data="ppmRecords" stripe v-loading="loading">
+          <el-table-column label="项目" min-width="180">
+            <template #default="{ row }">{{ row.project?.projectName }}</template>
+          </el-table-column>
+          <el-table-column prop="period" label="周期" width="120" />
+          <el-table-column label="周期类型" width="90">
+            <template #default="{ row }">{{ { monthly: '月度', quarterly: '季度', yearly: '年度' }[row.periodType] || row.periodType }}</template>
+          </el-table-column>
+          <el-table-column prop="totalParts" label="总件数" width="90" align="right" />
+          <el-table-column prop="defectParts" label="缺陷件数" width="90" align="right" />
+          <el-table-column label="PPM值" width="100" align="right">
+            <template #default="{ row }">{{ Number(row.ppmValue).toFixed(1) }}</template>
+          </el-table-column>
+          <el-table-column label="目标PPM" width="100" align="right">
+            <template #default="{ row }">{{ Number(row.targetPpm).toFixed(1) }}</template>
+          </el-table-column>
+          <el-table-column label="状态" width="90">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 'on_track' ? 'success' : row.status === 'warning' ? 'warning' : 'danger'" size="small">
+                {{ { on_track: '达标', warning: '预警', exceeded: '超标' }[row.status] || row.status }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="100" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="danger" size="small" @click="deletePpmRecord(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-card style="margin-top: 16px">
+          <template #header>PPM趋势</template>
+          <div ref="ppmTrendChartRef" style="height: 300px"></div>
+        </el-card>
+      </el-tab-pane>
+
       <!-- ==================== 统计分析 ==================== -->
       <el-tab-pane label="统计分析" name="stats">
         <el-row :gutter="16">
           <el-col :span="12">
+            <el-card>
+              <template #header>8D闭环趋势</template>
+              <div ref="eightDTrendChartRef" style="height: 280px"></div>
+            </el-card>
+          </el-col>
+          <el-col :span="12">
+            <el-card>
+              <template #header>问题老化分析</template>
+              <div ref="problemAgingChartRef" style="height: 280px"></div>
+            </el-card>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16" style="margin-top: 16px">
+          <el-col :span="12">
+            <el-card>
+              <template #header>Top 10缺陷Pareto</template>
+              <div ref="topDefectsChartRef" style="height: 280px"></div>
+            </el-card>
+          </el-col>
+          <el-col :span="12">
+            <el-card>
+              <template #header>质量成本汇总</template>
+              <div v-if="qualityCost" style="padding: 20px">
+                <el-row :gutter="16">
+                  <el-col :span="8">
+                    <div class="kpi-value" style="font-size: 24px; color: #f56c6c">¥{{ qualityCost.totalCost?.toLocaleString() }}</div>
+                    <div class="kpi-label">总质量成本</div>
+                  </el-col>
+                  <el-col :span="8">
+                    <div class="kpi-value" style="font-size: 24px">{{ qualityCost.recordCount }}</div>
+                    <div class="kpi-label">不合格品记录数</div>
+                  </el-col>
+                  <el-col :span="8">
+                    <div class="kpi-value" style="font-size: 24px; color: #e6a23c">{{ enhancedStats.avgClosureDays || 0 }}</div>
+                    <div class="kpi-label">平均关闭天数</div>
+                  </el-col>
+                </el-row>
+                <div style="margin-top: 20px">
+                  <div v-for="(cost, disp) in qualityCost.byDisposition" :key="disp" style="margin-bottom: 8px">
+                    <span>{{ { rework: '返工', repair: '返修', concession: '让步', scrap: '报废', return: '退回' }[disp as string] || disp }}</span>
+                    <span style="float: right; font-weight: bold">¥{{ Number(cost).toLocaleString() }}</span>
+                  </div>
+                </div>
+              </div>
+              <el-empty v-else description="暂无数据" />
+            </el-card>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16" style="margin-top: 16px">
+          <el-col :span="24">
             <el-card>
               <template #header>问题严重程度分布</template>
               <div v-for="item in problemAnalysis?.bySeverity || []" :key="item.severity" style="margin-bottom: 8px">
@@ -261,40 +385,6 @@
                 <el-progress :percentage="calcPercentage(item._count, totalProblems)" :stroke-width="16" style="margin-left: 12px" />
               </div>
               <el-empty v-if="!problemAnalysis?.bySeverity?.length" description="暂无数据" />
-            </el-card>
-          </el-col>
-          <el-col :span="12">
-            <el-card>
-              <template #header>问题来源分布</template>
-              <div v-for="item in problemAnalysis?.bySource || []" :key="item.source" style="margin-bottom: 8px">
-                <span>{{ PROBLEM_SOURCE[item.source] || item.source }}</span>
-                <el-progress :percentage="calcPercentage(item._count, totalProblems)" :stroke-width="16" style="margin-left: 12px" />
-              </div>
-              <el-empty v-if="!problemAnalysis?.bySource?.length" description="暂无数据" />
-            </el-card>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16" style="margin-top: 16px">
-          <el-col :span="24">
-            <el-card>
-              <template #header>最近问题</template>
-              <el-table :data="problemAnalysis?.recentProblems || []" stripe size="small">
-                <el-table-column prop="problemNo" label="编号" width="150" />
-                <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
-                <el-table-column label="严重程度" width="100">
-                  <template #default="{ row }">
-                    <el-tag :type="severityType(row.severity)" size="small">{{ PROBLEM_SEVERITY[row.severity] || row.severity }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column label="状态" width="100">
-                  <template #default="{ row }">
-                    <el-tag :type="statusType(row.status)" size="small">{{ PROBLEM_STATUS[row.status] || row.status }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column label="创建时间" width="120">
-                  <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
-                </el-table-column>
-              </el-table>
             </el-card>
           </el-col>
         </el-row>
@@ -604,22 +694,94 @@
         <el-button type="primary" @click="confirmVerifyCAPA">确认验证</el-button>
       </template>
     </el-dialog>
+
+    <!-- 升级历史 -->
+    <el-dialog v-model="showEscalationHistoryDialog" title="升级历史" width="600px">
+      <el-timeline v-if="escalationHistoryList.length">
+        <el-timeline-item v-for="item in escalationHistoryList" :key="item.id" :timestamp="formatDate(item.createdAt)" placement="top" :type="item.escalationLevel === 'L1' ? 'danger' : item.escalationLevel === 'L2' ? 'warning' : 'info'">
+          <el-card>
+            <div><b>{{ item.escalationLevel }}</b> - 升级至{{ item.escalateTo }}</div>
+            <div style="color: #909399; font-size: 12px; margin-top: 4px">
+              {{ item.triggeredBy === 'auto' ? '自动触发' : `手动触发 (${item.triggeredByUser?.realName || '-'})` }} | 已开启{{ item.daysOpen }}天
+            </div>
+            <div style="margin-top: 4px">{{ item.remark }}</div>
+          </el-card>
+        </el-timeline-item>
+      </el-timeline>
+      <el-empty v-else description="暂无升级记录" />
+    </el-dialog>
+
+    <!-- 手动升级 -->
+    <el-dialog v-model="showManualEscalateDialog" title="手动升级" width="400px">
+      <el-form label-width="100px">
+        <el-form-item label="升级级别">
+          <el-select v-model="escalateLevel" style="width: 100%">
+            <el-option label="L1 - 总经理" value="L1" />
+            <el-option label="L2 - 部门经理" value="L2" />
+            <el-option label="L3 - 项目经理" value="L3" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showManualEscalateDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmManualEscalate">确认升级</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 新建PPM记录 -->
+    <el-dialog v-model="showCreatePPM" title="新建PPM记录" width="540px">
+      <el-form :model="ppmForm" label-width="100px">
+        <el-form-item label="项目" required>
+          <el-select v-model="ppmForm.projectId" placeholder="选择项目" style="width: 100%">
+            <el-option v-for="p in projects" :key="p.id" :label="p.projectName" :value="p.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="周期" required>
+          <el-input v-model="ppmForm.period" placeholder="如: 2026-01" />
+        </el-form-item>
+        <el-form-item label="周期类型">
+          <el-select v-model="ppmForm.periodType" style="width: 100%">
+            <el-option label="月度" value="monthly" />
+            <el-option label="季度" value="quarterly" />
+            <el-option label="年度" value="yearly" />
+          </el-select>
+        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="总件数"><el-input-number v-model="ppmForm.totalParts" :min="0" style="width: 100%" /></el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="缺陷件数"><el-input-number v-model="ppmForm.defectParts" :min="0" style="width: 100%" /></el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <template #footer>
+        <el-button @click="showCreatePPM = false">取消</el-button>
+        <el-button type="primary" @click="createPpmRecord">创建</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { qualityApi } from '@/api'
 import { projectApi } from '@/api'
 import { procurementApi } from '@/api'
+import * as echarts from 'echarts/core'
+import { LineChart, BarChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent, LegendComponent, TitleComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import {
   PROBLEM_STATUS, PROBLEM_CLASSIFICATION, PROBLEM_SEVERITY, PROBLEM_SOURCE,
   EIGHT_D_STATUS, DEFECT_TYPE, DISPOSITION,
   CAPA_SOURCE, CAPA_TYPE, CAPA_STATUS,
   INSPECTION_TYPE, INSPECTION_RESULT,
 } from '@apqp/shared/constants/quality.constants'
+
+echarts.use([LineChart, BarChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent, CanvasRenderer])
 
 const loading = ref(false)
 const activeTab = ref('problems')
@@ -663,6 +825,35 @@ const capaForm = reactive<any>({ projectId: null, title: '', description: '', ty
 const inspectionForm = reactive<any>({ projectId: null, title: '', type: 'first_article', inspectionDate: '', sampleSize: 0, defectCount: 0, result: 'pass', findings: '', remarks: '' })
 const verifyEffectiveness = ref('')
 const verifyCapaId = ref<number | null>(null)
+
+// PPM data
+const ppmRecords = ref<any[]>([])
+const ppmCompliance = ref<any>({})
+const ppmTrendData = ref<any[]>([])
+const ppmFilter = reactive({ periodType: '' })
+const showCreatePPM = ref(false)
+const ppmForm = reactive<any>({ projectId: null, period: '', periodType: 'monthly', totalParts: 0, defectParts: 0 })
+
+// Escalation data
+const showEscalationHistoryDialog = ref(false)
+const showManualEscalateDialog = ref(false)
+const escalationHistoryList = ref<any[]>([])
+const escalateProblemId = ref<number | null>(null)
+const escalateLevel = ref('L2')
+
+// Enhanced stats
+const enhancedStats = ref<any>({})
+const qualityCost = ref<any>(null)
+
+// Chart refs
+const ppmTrendChartRef = ref<HTMLElement | null>(null)
+const eightDTrendChartRef = ref<HTMLElement | null>(null)
+const problemAgingChartRef = ref<HTMLElement | null>(null)
+const topDefectsChartRef = ref<HTMLElement | null>(null)
+let ppmTrendChart: echarts.ECharts | null = null
+let eightDTrendChart: echarts.ECharts | null = null
+let problemAgingChart: echarts.ECharts | null = null
+let topDefectsChart: echarts.ECharts | null = null
 
 const totalProblems = computed(() => {
   return (problemAnalysis.value?.bySeverity || []).reduce((sum: number, item: any) => sum + item._count, 0)
@@ -926,6 +1117,168 @@ async function viewInspection(row: any) {
     '检验详情', { dangerouslyUseHTMLString: true }
   )
 }
+
+// Escalation methods
+async function showEscalationHistory(row: any) {
+  try {
+    const res = await qualityApi.escalation.history(row.id)
+    escalationHistoryList.value = res.data?.data || res.data || []
+    showEscalationHistoryDialog.value = true
+  } catch { escalationHistoryList.value = []; showEscalationHistoryDialog.value = true }
+}
+function showManualEscalate(row: any) {
+  escalateProblemId.value = row.id
+  escalateLevel.value = 'L2'
+  showManualEscalateDialog.value = true
+}
+async function confirmManualEscalate() {
+  if (!escalateProblemId.value) return
+  await qualityApi.escalation.manualEscalate(escalateProblemId.value, escalateLevel.value)
+  ElMessage.success('升级成功')
+  showManualEscalateDialog.value = false
+  await loadProblems()
+}
+
+// PPM methods
+async function loadPpmRecords() {
+  try {
+    const params: any = {}
+    if (filterProjectId.value) params.projectId = filterProjectId.value
+    if (ppmFilter.periodType) params.periodType = ppmFilter.periodType
+    const res = await qualityApi.ppm.list(params)
+    ppmRecords.value = res.data?.data || res.data || []
+  } catch {}
+}
+async function loadPpmCompliance() {
+  try {
+    const res = await qualityApi.ppm.compliance(filterProjectId.value ? { projectId: filterProjectId.value } : {})
+    ppmCompliance.value = res.data?.data || res.data || {}
+  } catch {}
+}
+async function loadPpmTrend() {
+  try {
+    const res = await qualityApi.ppm.trend(filterProjectId.value ? { projectId: filterProjectId.value } : {})
+    ppmTrendData.value = res.data?.data || res.data || []
+    renderPpmTrendChart()
+  } catch {}
+}
+async function createPpmRecord() {
+  if (!ppmForm.projectId || !ppmForm.period) { ElMessage.warning('请填写必要信息'); return }
+  await qualityApi.ppm.create(ppmForm)
+  ElMessage.success('PPM记录创建成功')
+  showCreatePPM.value = false
+  Object.assign(ppmForm, { projectId: null, period: '', periodType: 'monthly', totalParts: 0, defectParts: 0 })
+  await loadPpmRecords()
+  await loadPpmCompliance()
+}
+async function deletePpmRecord(row: any) {
+  await ElMessageBox.confirm('确认删除此PPM记录？', '确认')
+  await qualityApi.ppm.delete(row.id)
+  ElMessage.success('已删除')
+  await loadPpmRecords()
+  await loadPpmCompliance()
+}
+
+// Enhanced stats methods
+async function loadEnhancedStats() {
+  try {
+    const [enhanced, cost, aging, topDefects, eightDTrend] = await Promise.all([
+      qualityApi.stats.enhanced(),
+      qualityApi.stats.qualityCost(filterProjectId.value ? { projectId: filterProjectId.value } : {}),
+      qualityApi.stats.problemAging(filterProjectId.value ? { projectId: filterProjectId.value } : {}),
+      qualityApi.stats.topDefects({ limit: 10, ...(filterProjectId.value ? { projectId: filterProjectId.value } : {}) }),
+      qualityApi.stats.eightDClosureTrend({ months: 6 }),
+    ])
+    enhancedStats.value = enhanced.data?.data || enhanced.data || {}
+    qualityCost.value = cost.data?.data || cost.data || null
+    await nextTick()
+    renderProblemAgingChart(aging.data?.data || aging.data || {})
+    renderTopDefectsChart(topDefects.data?.data || topDefects.data || [])
+    renderEightDTrendChart(eightDTrend.data?.data || eightDTrend.data || [])
+  } catch {}
+}
+
+// Chart rendering
+function renderPpmTrendChart() {
+  if (!ppmTrendChartRef.value) return
+  if (!ppmTrendChart) ppmTrendChart = echarts.init(ppmTrendChartRef.value)
+  ppmTrendChart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['PPM值', '目标PPM'] },
+    xAxis: { type: 'category', data: ppmTrendData.value.map((d: any) => d.period) },
+    yAxis: { type: 'value', name: 'PPM' },
+    series: [
+      { name: 'PPM值', type: 'line', data: ppmTrendData.value.map((d: any) => d.ppmValue), itemStyle: { color: '#409eff' } },
+      { name: '目标PPM', type: 'line', data: ppmTrendData.value.map((d: any) => d.targetPpm), lineStyle: { type: 'dashed' }, itemStyle: { color: '#67c23a' } },
+    ],
+  })
+}
+function renderEightDTrendChart(data: any[]) {
+  if (!eightDTrendChartRef.value) return
+  if (!eightDTrendChart) eightDTrendChart = echarts.init(eightDTrendChartRef.value)
+  eightDTrendChart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['创建', '关闭'] },
+    xAxis: { type: 'category', data: data.map((d: any) => d.month) },
+    yAxis: { type: 'value' },
+    series: [
+      { name: '创建', type: 'line', data: data.map((d: any) => d.created), itemStyle: { color: '#e6a23c' } },
+      { name: '关闭', type: 'line', data: data.map((d: any) => d.completed), itemStyle: { color: '#67c23a' } },
+    ],
+  })
+}
+function renderProblemAgingChart(data: any) {
+  if (!problemAgingChartRef.value) return
+  if (!problemAgingChart) problemAgingChart = echarts.init(problemAgingChartRef.value)
+  const labels = Object.keys(data)
+  const values = Object.values(data)
+  problemAgingChart.setOption({
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: labels.map((l) => l + '天') },
+    yAxis: { type: 'value', name: '问题数' },
+    series: [{ type: 'bar', data: values, itemStyle: { color: '#409eff' } }],
+  })
+}
+function renderTopDefectsChart(data: any[]) {
+  if (!topDefectsChartRef.value) return
+  if (!topDefectsChart) topDefectsChart = echarts.init(topDefectsChartRef.value)
+  const typeLabels: Record<string, string> = { dimension: '尺寸超差', appearance: '外观缺陷', function: '功能失效', material: '材料不符', packaging: '包装破损' }
+  const labels = data.map((d: any) => typeLabels[d.defectType] || d.defectType)
+  const values = data.map((d: any) => d.defectQty)
+  const total = values.reduce((s: number, v: number) => s + v, 0)
+  let cum = 0
+  const cumPct = values.map((v: number) => { cum += v; return total > 0 ? Math.round((cum / total) * 100) : 0 })
+  topDefectsChart.setOption({
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: labels, axisLabel: { rotate: 30 } },
+    yAxis: [
+      { type: 'value', name: '缺陷数' },
+      { type: 'value', name: '累积%', max: 100, axisLabel: { formatter: '{value}%' } },
+    ],
+    series: [
+      { type: 'bar', data: values, itemStyle: { color: '#f56c6c' } },
+      { type: 'line', yAxisIndex: 1, data: cumPct, itemStyle: { color: '#409eff' } },
+    ],
+  })
+}
+
+// Tab watcher for lazy-loading charts
+watch(activeTab, (tab) => {
+  if (tab === 'ppm') {
+    loadPpmRecords()
+    loadPpmCompliance()
+    nextTick(() => loadPpmTrend())
+  } else if (tab === 'stats') {
+    nextTick(() => loadEnhancedStats())
+  }
+})
+
+onBeforeUnmount(() => {
+  ppmTrendChart?.dispose()
+  eightDTrendChart?.dispose()
+  problemAgingChart?.dispose()
+  topDefectsChart?.dispose()
+})
 
 onMounted(() => {
   loadAllData()

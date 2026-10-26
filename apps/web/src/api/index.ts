@@ -428,6 +428,25 @@ export const qualityApi = {
   stats: {
     overview: () => request.get('/quality/stats/overview'),
     problemAnalysis: (params?: any) => request.get('/quality/stats/problem-analysis', { params }),
+    enhanced: () => request.get('/quality/stats/enhanced'),
+    eightDClosureTrend: (params?: { months?: number }) => request.get('/quality/stats/8d-closure-trend', { params }),
+    problemAging: (params?: { projectId?: number }) => request.get('/quality/stats/problem-aging', { params }),
+    qualityCost: (params?: { projectId?: number }) => request.get('/quality/stats/quality-cost', { params }),
+    topDefects: (params?: { limit?: number; projectId?: number }) => request.get('/quality/stats/top-defects', { params }),
+  },
+  escalation: {
+    history: (problemId: number) => request.get(`/quality/problems/${problemId}/escalation-history`),
+    manualEscalate: (problemId: number, level: string) => request.put(`/quality/problems/${problemId}/manual-escalate`, { level }),
+  },
+  ppm: {
+    list: (params?: any) => request.get('/quality/ppm-records', { params }),
+    get: (id: number) => request.get(`/quality/ppm-records/${id}`),
+    create: (data: any) => request.post('/quality/ppm-records', data),
+    update: (id: number, data: any) => request.put(`/quality/ppm-records/${id}`, data),
+    delete: (id: number) => request.delete(`/quality/ppm-records/${id}`),
+    calculate: (data: { projectId: number; period: string }) => request.post('/quality/ppm-records/calculate', data),
+    trend: (params?: { projectId?: number; months?: number }) => request.get('/quality/ppm-records/trend', { params }),
+    compliance: (params?: { projectId?: number }) => request.get('/quality/ppm-records/compliance', { params }),
   },
 }
 
@@ -563,4 +582,11 @@ export const changeApi = {
   stats: {
     overview: (params?: any) => request.get('/change/stats/overview', { params }),
   },
+}
+
+export const dashboardApi = {
+  overview: () => request.get('/dashboard/overview'),
+  warnings: () => request.get('/dashboard/warnings'),
+  myTasks: () => request.get('/dashboard/my-tasks'),
+  trends: (params?: { months?: number }) => request.get('/dashboard/trends', { params }),
 }

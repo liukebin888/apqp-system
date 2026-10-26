@@ -123,6 +123,9 @@ model SysUser {
   ecnsVerified          ChgEcn[]               @relation("EcnVerifier")
   ecnActionsAssigned    ChgEcnActionItem[]     @relation("EcnActionAssignee")
 
+  ppmRecordsCreated     QualityPpmRecord[]     @relation("PpmRecordCreator")
+  escalationHistoryTriggered QualityEscalationHistory[] @relation("EscalationTriggerUser")
+
   @@map("sys_users")
 }
 
@@ -578,6 +581,7 @@ model PrjProject {
   msaStudies       QeMsaStudy[]
   chgEcrs          ChgEcr[]
   chgEcns          ChgEcn[]
+  ppmRecords       QualityPpmRecord[]
 
   @@index([status])
   @@index([managerId])
@@ -1601,6 +1605,7 @@ model QualityProblem {
   createdBy       SysUser           @relation("ProblemCreator", fields: [createdById], references: [id])
   closedBy        SysUser?          @relation("ProblemCloser", fields: [closedById], references: [id])
   eightDReport    Quality8DReport?
+  escalationHistory QualityEscalationHistory[]
 
   @@index([projectId])
   @@index([status])
@@ -2219,4 +2224,58 @@ model ChgEcnActionItem {
 
   @@index([ecnId])
   @@map("chg_ecn_action_items")
+}
+
+// ============================================================
+// Layer 11: Quality Enhancement (Phase 9)
+// ============================================================
+
+// ==================== Escalation History ====================
+
+model QualityEscalationHistory {
+  id                Int       @id @default(autoincrement()) @db.UnsignedInt
+  problemId         Int       @db.UnsignedInt
+  fromStatus        String    @db.VarChar(20)
+  toStatus          String    @db.VarChar(20)
+  escalationLevel   String    @db.VarChar(10) // L1/L2/L3
+  severity          String    @db.VarChar(20)
+  daysOpen          Int       @db.UnsignedInt
+  escalateTo        String    @db.VarChar(50)
+  alertRecordId     Int?      @db.UnsignedInt
+  triggeredBy       String    @db.VarChar(10) // auto/manual
+  triggeredById     Int?      @db.UnsignedInt
+  remark            String?   @db.Text
+  createdAt         DateTime  @default(now())
+
+  problem           QualityProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  triggeredByUser   SysUser?       @relation("EscalationTriggerUser", fields: [triggeredById], references: [id])
+
+  @@index([problemId])
+  @@index([escalationLevel])
+  @@map("quality_escalation_history")
+}
+
+// ==================== PPM Records ====================
+
+model QualityPpmRecord {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  period          String    @db.VarChar(20) // 2026-01, 2026-Q1, 2026
+  periodType      String    @db.VarChar(10) // monthly/quarterly/yearly
+  totalParts      Int       @default(0) @db.UnsignedInt
+  defectParts     Int       @default(0) @db.UnsignedInt
+  ppmValue        Decimal   @default(0) @db.Decimal(12, 2)
+  targetPpm       Decimal   @default(0) @db.Decimal(12, 2)
+  status          String    @default("on_track") @db.VarChar(20) // on_track/warning/exceeded
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project         PrjProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy       SysUser    @relation("PpmRecordCreator", fields: [createdById], references: [id])
+
+  @@unique([projectId, period])
+  @@index([projectId])
+  @@index([periodType])
+  @@map("quality_ppm_records")
 }
