@@ -20,6 +20,7 @@ import { QualityModule } from './modules/quality/quality.module'
 import { FmeaModule } from './modules/fmea/fmea.module'
 import { ChangeModule } from './modules/change/change.module'
 import { DashboardModule } from './modules/dashboard/dashboard.module'
+import { SafetyModule } from './modules/safety/safety.module'
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module'
     FmeaModule,
     ChangeModule,
     DashboardModule,
+    SafetyModule,
   ],
   providers: [PrismaService],
   exports: [PrismaService],

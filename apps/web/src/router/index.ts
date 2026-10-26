@@ -203,6 +203,13 @@ const router = createRouter({
           component: () => import('@/views/change/ChangeManagementView.vue'),
           meta: { title: '工程变更管理', icon: 'Switch', group: 'change' },
         },
+        // ---- 功能安全 ----
+        {
+          path: 'functional-safety',
+          name: 'FunctionalSafety',
+          component: () => import('@/views/safety/FunctionalSafetyView.vue'),
+          meta: { title: '功能安全', icon: 'Shield', group: 'safety' },
+        },
         // ---- 通知 ----
         {
           path: 'notifications',

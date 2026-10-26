@@ -126,6 +126,22 @@ model SysUser {
   ppmRecordsCreated     QualityPpmRecord[]     @relation("PpmRecordCreator")
   escalationHistoryTriggered QualityEscalationHistory[] @relation("EscalationTriggerUser")
 
+  safetyHazardsCreated    SafetyHazardAnalysis[] @relation("SafetyHazardCreator")
+  safetyGoalsCreated      SafetyGoal[]           @relation("SafetyGoalCreator")
+  safetyFtaEventsCreated  SafetyFtaEvent[]       @relation("SafetyFtaCreator")
+  safetyCasesCreated      SafetyCase[]           @relation("SafetyCaseCreator")
+  safetyCasesApproved     SafetyCase[]           @relation("SafetyCaseApprover")
+  safetyReviewsCreated    SafetyReview[]         @relation("SafetyReviewCreator")
+  safetyReviewsLed        SafetyReview[]         @relation("SafetyReviewLeader")
+  safetyConceptsCreated   SafetyConcept[]        @relation("SafetyConceptCreator")
+  safetyRequirementsCreated SafetyRequirement[]  @relation("SafetyReqCreator")
+  fmedaRecordsCreated     FmedaRecord[]          @relation("FmedaCreator")
+  hardwareMetricsCreated  HardwareSafetyMetric[] @relation("HwMetricCreator")
+  dfaRecordsCreated       DfaRecord[]            @relation("DfaCreator")
+  asilDecompositionsCreated AsilDecomposition[]  @relation("AsilDecompCreator")
+  toolQualificationsCreated ToolQualification[]  @relation("ToolQualCreator")
+  confirmationMeasuresCreated ConfirmationMeasure[] @relation("ConfirmMeasureCreator")
+
   @@map("sys_users")
 }
 
@@ -547,6 +563,8 @@ model PrjProject {
   apqpPhase       Int       @default(1) @db.TinyInt // 1-5 APQP phases
   description     String?   @db.Text
   workflowInstanceId Int?    @db.UnsignedInt
+  hasFunctionalSafety Boolean @default(false)
+  asilLevel           String? @db.VarChar(5)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -582,6 +600,19 @@ model PrjProject {
   chgEcrs          ChgEcr[]
   chgEcns          ChgEcn[]
   ppmRecords       QualityPpmRecord[]
+  safetyHazards    SafetyHazardAnalysis[]
+  safetyGoals      SafetyGoal[]
+  safetyFtaEvents  SafetyFtaEvent[]
+  safetyCases      SafetyCase[]
+  safetyReviews    SafetyReview[]
+  safetyConcepts   SafetyConcept[]
+  safetyRequirements SafetyRequirement[]
+  fmedaRecords     FmedaRecord[]
+  hardwareMetrics  HardwareSafetyMetric[]
+  dfaRecords       DfaRecord[]
+  asilDecompositions AsilDecomposition[]
+  toolQualifications ToolQualification[]
+  confirmationMeasures ConfirmationMeasure[]
 
   @@index([status])
   @@index([managerId])
@@ -869,6 +900,7 @@ model ReqRequirement {
   targetLinks  ReqTraceLink[]       @relation("TargetRequirement")
   baselines    ReqBaselineRequirement[]
   changeRequestLinks ReqChangeRequestRequirement[]
+  safetyRequirements SafetyRequirement[] @relation("SafetyReqSource")
 
   @@index([projectId])
   @@index([reqType, status])
@@ -2278,4 +2310,419 @@ model QualityPpmRecord {
   @@index([projectId])
   @@index([periodType])
   @@map("quality_ppm_records")
+}
+
+// ==================== 功能安全 (ISO 26262) ====================
+
+model SafetyHazardAnalysis {
+  id                    Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId             Int       @db.UnsignedInt
+  hazardNo              String    @unique @db.VarChar(50)
+  title                 String    @db.VarChar(200)
+  description           String?   @db.Text
+  hazardType            String    @db.VarChar(30)
+  malfunctionEffect     String?   @db.Text
+  severityRating        Int       @default(0) @db.TinyInt
+  exposureRating        Int       @default(1) @db.TinyInt
+  controllabilityRating Int       @default(1) @db.TinyInt
+  calculatedAsil        String    @default("QM") @db.VarChar(5)
+  justification         String?   @db.Text
+  status                String    @default("draft") @db.VarChar(20)
+  createdById           Int       @db.UnsignedInt
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  project     PrjProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy   SysUser      @relation("SafetyHazardCreator", fields: [createdById], references: [id])
+  safetyGoals SafetyGoal[]
+
+  @@index([projectId, status])
+  @@index([calculatedAsil])
+  @@map("safety_hazard_analyses")
+}
+
+model SafetyGoal {
+  id                 Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId          Int       @db.UnsignedInt
+  goalNo             String    @unique @db.VarChar(50)
+  title              String    @db.VarChar(200)
+  description        String?   @db.Text
+  targetAsil         String    @db.VarChar(5)
+  hazardId           Int?      @db.UnsignedInt
+  parentGoalId       Int?      @db.UnsignedInt
+  acceptanceCriteria String?   @db.Text
+  status             String    @default("draft") @db.VarChar(20)
+  createdById        Int       @db.UnsignedInt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  project             PrjProject            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  hazard              SafetyHazardAnalysis? @relation(fields: [hazardId], references: [id])
+  parentGoal          SafetyGoal?           @relation("SafetyGoalTree", fields: [parentGoalId], references: [id])
+  childGoals          SafetyGoal[]          @relation("SafetyGoalTree")
+  createdBy           SysUser               @relation("SafetyGoalCreator", fields: [createdById], references: [id])
+  safetyCaseArguments SafetyCaseArgument[]
+  ftaEvents           SafetyFtaEvent[]      @relation("FtaGoalLink")
+  safetyConcepts      SafetyConcept[]
+  safetyRequirements  SafetyRequirement[]
+  asilDecompositions  AsilDecomposition[]
+  fmedaRecords        FmedaRecord[]
+  hardwareMetrics     HardwareSafetyMetric[]
+  dfaRecords          DfaRecord[]
+  confirmationMeasures ConfirmationMeasure[]
+
+  @@index([projectId, status])
+  @@index([hazardId])
+  @@map("safety_goals")
+}
+
+model SafetyFtaEvent {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId    Int       @db.UnsignedInt
+  eventNo      String    @unique @db.VarChar(50)
+  title        String    @db.VarChar(200)
+  description  String?   @db.Text
+  eventType    String    @db.VarChar(20)
+  gateType     String?   @db.VarChar(10)
+  votingK      Int?      @db.TinyInt
+  failureRate  Decimal?  @db.Decimal(12, 6)
+  probability  Decimal?  @db.Decimal(10, 8)
+  parentId     Int?      @db.UnsignedInt
+  goalId       Int?      @db.UnsignedInt
+  sortOrder    Int       @default(0)
+  status       String    @default("draft") @db.VarChar(20)
+  createdById  Int       @db.UnsignedInt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  project   PrjProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent    SafetyFtaEvent?  @relation("FtaTree", fields: [parentId], references: [id])
+  children  SafetyFtaEvent[] @relation("FtaTree")
+  goal      SafetyGoal?      @relation("FtaGoalLink", fields: [goalId], references: [id])
+  fmedaRecords FmedaRecord[]
+  createdBy SysUser          @relation("SafetyFtaCreator", fields: [createdById], references: [id])
+
+  @@index([projectId, parentId])
+  @@index([eventType])
+  @@index([goalId])
+  @@map("safety_fta_events")
+}
+
+model SafetyCase {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId    Int       @db.UnsignedInt
+  caseNo       String    @unique @db.VarChar(50)
+  title        String    @db.VarChar(200)
+  description  String?   @db.Text
+  version      Int       @default(1)
+  status       String    @default("draft") @db.VarChar(20)
+  approvedById Int?      @db.UnsignedInt
+  approvedAt   DateTime?
+  createdById  Int       @db.UnsignedInt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  project    PrjProject             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  approvedBy SysUser?               @relation("SafetyCaseApprover", fields: [approvedById], references: [id])
+  createdBy  SysUser                @relation("SafetyCaseCreator", fields: [createdById], references: [id])
+  arguments  SafetyCaseArgument[]
+  evidences  SafetyCaseEvidence[]
+  confirmationMeasures ConfirmationMeasure[]
+
+  @@index([projectId, status])
+  @@map("safety_cases")
+}
+
+model SafetyCaseArgument {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  safetyCaseId Int       @db.UnsignedInt
+  argumentNo   String    @db.VarChar(50)
+  nodeType     String    @db.VarChar(20)
+  title        String    @db.VarChar(200)
+  description  String?   @db.Text
+  parentId     Int?      @db.UnsignedInt
+  sortOrder    Int       @default(0)
+  goalId       Int?      @db.UnsignedInt
+  status       String    @default("draft") @db.VarChar(20)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  safetyCase SafetyCase           @relation(fields: [safetyCaseId], references: [id], onDelete: Cascade)
+  parent     SafetyCaseArgument?  @relation("SafetyArgumentTree", fields: [parentId], references: [id])
+  children   SafetyCaseArgument[] @relation("SafetyArgumentTree")
+  goal       SafetyGoal?          @relation(fields: [goalId], references: [id])
+  evidences  SafetyCaseEvidence[]
+
+  @@index([safetyCaseId, parentId])
+  @@map("safety_case_arguments")
+}
+
+model SafetyCaseEvidence {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  safetyCaseId  Int       @db.UnsignedInt
+  argumentId    Int?      @db.UnsignedInt
+  evidenceType  String    @db.VarChar(30)
+  referenceId   Int?      @db.UnsignedInt
+  referenceType String?   @db.VarChar(50)
+  title         String    @db.VarChar(200)
+  description   String?   @db.Text
+  fileUrl       String?   @db.VarChar(500)
+  status        String    @default("collected") @db.VarChar(20)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  safetyCase SafetyCase           @relation(fields: [safetyCaseId], references: [id], onDelete: Cascade)
+  argument   SafetyCaseArgument?  @relation(fields: [argumentId], references: [id])
+
+  @@index([safetyCaseId])
+  @@index([argumentId])
+  @@index([referenceType, referenceId])
+  @@map("safety_case_evidences")
+}
+
+model SafetyReview {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  reviewNo        String    @unique @db.VarChar(50)
+  title           String    @db.VarChar(200)
+  reviewType      String    @db.VarChar(30)
+  plannedDate     DateTime?
+  actualDate      DateTime?
+  leaderId        Int?      @db.UnsignedInt
+  status          String    @default("planned") @db.VarChar(20)
+  conclusion      String?   @db.VarChar(30)
+  findingsSummary String?   @db.Text
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project   PrjProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  leader    SysUser?   @relation("SafetyReviewLeader", fields: [leaderId], references: [id])
+  createdBy SysUser    @relation("SafetyReviewCreator", fields: [createdById], references: [id])
+
+  @@index([projectId, status])
+  @@index([reviewType])
+  @@map("safety_reviews")
+}
+
+model SafetyConcept {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId     Int       @db.UnsignedInt
+  conceptNo     String    @unique @db.VarChar(50)
+  title         String    @db.VarChar(200)
+  description   String?   @db.Text
+  conceptType   String    @db.VarChar(10)
+  goalId        Int?      @db.UnsignedInt
+  parentConceptId Int?    @db.UnsignedInt
+  architectureMapping String? @db.Text
+  status        String    @default("draft") @db.VarChar(20)
+  createdById   Int       @db.UnsignedInt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project       PrjProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  goal          SafetyGoal?      @relation(fields: [goalId], references: [id])
+  parentConcept SafetyConcept?   @relation("ConceptTree", fields: [parentConceptId], references: [id])
+  childConcepts SafetyConcept[]  @relation("ConceptTree")
+  createdBy     SysUser          @relation("SafetyConceptCreator", fields: [createdById], references: [id])
+  requirements  SafetyRequirement[]
+
+  @@index([projectId, status])
+  @@index([goalId])
+  @@map("safety_concepts")
+}
+
+model SafetyRequirement {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  reqNo           String    @unique @db.VarChar(50)
+  title           String    @db.VarChar(200)
+  description     String?   @db.Text
+  reqType         String    @db.VarChar(10)
+  conceptId       Int?      @db.UnsignedInt
+  goalId          Int?      @db.UnsignedInt
+  sourceReqId     Int?      @db.UnsignedInt
+  asilLevel       String    @db.VarChar(5)
+  acceptanceCriteria String? @db.Text
+  verificationMethod String? @db.VarChar(50)
+  status          String    @default("draft") @db.VarChar(20)
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project       PrjProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  concept       SafetyConcept?   @relation(fields: [conceptId], references: [id])
+  goal          SafetyGoal?      @relation(fields: [goalId], references: [id])
+  sourceReq     ReqRequirement?  @relation("SafetyReqSource", fields: [sourceReqId], references: [id])
+  createdBy     SysUser          @relation("SafetyReqCreator", fields: [createdById], references: [id])
+
+  @@index([projectId, status])
+  @@index([goalId])
+  @@index([conceptId])
+  @@map("safety_requirements")
+}
+
+model FmedaRecord {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  fmedaNo         String    @unique @db.VarChar(50)
+  title           String    @db.VarChar(200)
+  description     String?   @db.Text
+  componentName   String    @db.VarChar(200)
+  failureMode     String    @db.VarChar(200)
+  failureEffect   String?   @db.Text
+  failureCause    String?   @db.Text
+  severityRating  Int       @default(0) @db.TinyInt
+  occurrenceRating Int      @default(0) @db.TinyInt
+  detectionRating Int       @default(0) @db.TinyInt
+  diagnosticCoverage Decimal? @db.Decimal(5, 4)
+  fitRate         Decimal?  @db.Decimal(12, 6)
+  safetyGoalId    Int?      @db.UnsignedInt
+  ftaEventId      Int?      @db.UnsignedInt
+  mitigationMeasure String? @db.Text
+  status          String    @default("draft") @db.VarChar(20)
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project     PrjProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  safetyGoal  SafetyGoal?      @relation(fields: [safetyGoalId], references: [id])
+  ftaEvent    SafetyFtaEvent?  @relation(fields: [ftaEventId], references: [id])
+  createdBy   SysUser          @relation("FmedaCreator", fields: [createdById], references: [id])
+
+  @@index([projectId, status])
+  @@index([safetyGoalId])
+  @@map("fmeda_records")
+}
+
+model HardwareSafetyMetric {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId     Int       @db.UnsignedInt
+  metricNo      String    @unique @db.VarChar(50)
+  title         String    @db.VarChar(200)
+  description   String?   @db.Text
+  metricType    String    @db.VarChar(10)
+  targetValue   Decimal   @db.Decimal(10, 6)
+  calculatedValue Decimal @db.Decimal(10, 6)
+  safetyGoalId  Int?      @db.UnsignedInt
+  status        String    @default("draft") @db.VarChar(20)
+  createdById   Int       @db.UnsignedInt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project     PrjProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  safetyGoal  SafetyGoal?  @relation(fields: [safetyGoalId], references: [id])
+  createdBy   SysUser      @relation("HwMetricCreator", fields: [createdById], references: [id])
+
+  @@index([projectId, status])
+  @@index([safetyGoalId])
+  @@map("hardware_safety_metrics")
+}
+
+model DfaRecord {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  dfaNo           String    @unique @db.VarChar(50)
+  title           String    @db.VarChar(200)
+  description     String?   @db.Text
+  failureType     String    @db.VarChar(20)
+  failureGroup    String?   @db.VarChar(200)
+  rootCause       String?   @db.Text
+  affectedComponents String? @db.Text
+  mitigationMeasures String? @db.Text
+  safetyGoalId    Int?      @db.UnsignedInt
+  status          String    @default("draft") @db.VarChar(20)
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project     PrjProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  safetyGoal  SafetyGoal?  @relation(fields: [safetyGoalId], references: [id])
+  createdBy   SysUser      @relation("DfaCreator", fields: [createdById], references: [id])
+
+  @@index([projectId, status])
+  @@index([safetyGoalId])
+  @@map("dfa_records")
+}
+
+model AsilDecomposition {
+  id                Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId         Int       @db.UnsignedInt
+  decompositionNo   String    @unique @db.VarChar(50)
+  title             String    @db.VarChar(200)
+  description       String?   @db.Text
+  goalId            Int       @db.UnsignedInt
+  originalAsil      String    @db.VarChar(5)
+  decomposedAsilA   String    @db.VarChar(5)
+  decomposedAsilB   String    @db.VarChar(5)
+  justification     String?   @db.Text
+  redundancyRequirements String? @db.Text
+  status            String    @default("proposed") @db.VarChar(20)
+  createdById       Int       @db.UnsignedInt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  project     PrjProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  goal        SafetyGoal   @relation(fields: [goalId], references: [id])
+  createdBy   SysUser      @relation("AsilDecompCreator", fields: [createdById], references: [id])
+
+  @@index([projectId, status])
+  @@index([goalId])
+  @@map("asil_decompositions")
+}
+
+model ToolQualification {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int?      @db.UnsignedInt
+  toolNo          String    @unique @db.VarChar(50)
+  toolName        String    @db.VarChar(200)
+  toolType        String    @db.VarChar(30)
+  manufacturer    String?   @db.VarChar(200)
+  version         String?   @db.VarChar(50)
+  confidenceLevel String    @db.VarChar(10)
+  qualificationMethod String? @db.Text
+  qualificationEvidence String? @db.VarChar(500)
+  diaReference    String?   @db.VarChar(200)
+  status          String    @default("not_qualified") @db.VarChar(20)
+  qualifiedAt     DateTime?
+  expiresAt       DateTime?
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project     PrjProject?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy   SysUser      @relation("ToolQualCreator", fields: [createdById], references: [id])
+
+  @@index([status])
+  @@index([confidenceLevel])
+  @@map("tool_qualifications")
+}
+
+model ConfirmationMeasure {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId       Int       @db.UnsignedInt
+  measureNo       String    @unique @db.VarChar(50)
+  title           String    @db.VarChar(200)
+  description     String?   @db.Text
+  measureType     String    @db.VarChar(30)
+  safetyCaseId    Int?      @db.UnsignedInt
+  safetyGoalId    Int?      @db.UnsignedInt
+  plannedDate     DateTime?
+  actualDate      DateTime?
+  result          String?   @db.Text
+  evidenceUrl     String?   @db.VarChar(500)
+  status          String    @default("planned") @db.VarChar(20)
+  createdById     Int       @db.UnsignedInt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project     PrjProject    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  safetyCase  SafetyCase?   @relation(fields: [safetyCaseId], references: [id])
+  safetyGoal  SafetyGoal?   @relation(fields: [safetyGoalId], references: [id])
+  createdBy   SysUser       @relation("ConfirmMeasureCreator", fields: [createdById], references: [id])
+
+  @@index([projectId, status])
+  @@index([safetyCaseId])
+  @@index([safetyGoalId])
+  @@map("confirmation_measures")
 }

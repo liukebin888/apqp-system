@@ -21,7 +21,7 @@
         <el-sub-menu index="project">
           <template #title>
             <el-icon><Folder /></el-icon>
-            <span>项目管理</span>
+            <span>项目进度</span>
           </template>
           <el-menu-item index="/projects">项目列表</el-menu-item>
         </el-sub-menu>
@@ -80,6 +80,10 @@
         <el-menu-item index="/change-management">
           <el-icon><Switch /></el-icon>
           <template #title>工程变更管理</template>
+        </el-menu-item>
+        <el-menu-item index="/functional-safety">
+          <el-icon><Shield /></el-icon>
+          <template #title>功能安全</template>
         </el-menu-item>
 
         <el-sub-menu index="master-data">
