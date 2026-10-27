@@ -1,9 +1,11 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query, Req,
+  Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards,
 } from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
 import { GateReviewService } from './gate-review.service'
 
 @Controller('gate-reviews')
+@UseGuards(AuthGuard('jwt'))
 export class GateReviewController {
   constructor(private readonly service: GateReviewService) {}
 

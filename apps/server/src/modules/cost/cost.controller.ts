@@ -1,9 +1,11 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query, Req,
+  Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards,
 } from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
 import { CostService } from './cost.service'
 
 @Controller('cost')
+@UseGuards(AuthGuard('jwt'))
 export class CostController {
   constructor(private readonly service: CostService) {}
 

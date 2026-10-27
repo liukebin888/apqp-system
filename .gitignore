@@ -37,3 +37,6 @@ apps/server/uploads/
 
 # Docker
 docker-data/
+
+# Test coverage
+coverage/

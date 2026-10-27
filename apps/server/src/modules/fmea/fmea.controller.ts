@@ -1,9 +1,11 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query, Req,
+  Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards,
 } from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
 import { FmeaService } from './fmea.service'
 
 @Controller('fmea')
+@UseGuards(AuthGuard('jwt'))
 export class FmeaController {
   constructor(private readonly fmeaService: FmeaService) {}
 

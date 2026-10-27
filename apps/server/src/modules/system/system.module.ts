@@ -10,6 +10,8 @@ import { MasterDataController } from './master-data/master-data.controller'
 import { MasterDataService } from './master-data/master-data.service'
 import { AuditLogController } from './audit-log/audit-log.controller'
 import { AuditLogService } from './audit-log/audit-log.service'
+import { ConfigController } from './config/config.controller'
+import { ConfigService } from './config/config.service'
 
 @Module({
   controllers: [
@@ -18,6 +20,7 @@ import { AuditLogService } from './audit-log/audit-log.service'
     RoleController,
     MasterDataController,
     AuditLogController,
+    ConfigController,
   ],
   providers: [
     PrismaService,
@@ -26,7 +29,8 @@ import { AuditLogService } from './audit-log/audit-log.service'
     RoleService,
     MasterDataService,
     AuditLogService,
+    ConfigService,
   ],
-  exports: [UserService, OrganizationService],
+  exports: [UserService, OrganizationService, ConfigService],
 })
 export class SystemModule {}

@@ -1,11 +1,13 @@
 import {
   Controller, Get, Post, Put, Delete, Body, Param, Query,
-  UseInterceptors, UploadedFile, Req, Res, StreamableFile,
+  UseInterceptors, UploadedFile, Req, Res, StreamableFile, UseGuards,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
+import { AuthGuard } from '@nestjs/passport'
 import { DocumentService } from './document.service'
 
 @Controller('documents')
+@UseGuards(AuthGuard('jwt'))
 export class DocumentController {
   constructor(private readonly service: DocumentService) {}
 

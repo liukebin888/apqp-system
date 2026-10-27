@@ -706,3 +706,194 @@ export const safetyApi = {
     complete: (id: number, data: any) => request.put(`/safety/measures/${id}/complete`, data),
   },
 }
+
+// ==================== 问题管理 ====================
+export const issueApi = {
+  issues: {
+    list: (params?: any) => request.get('/issues', { params }),
+    stats: (params?: any) => request.get('/issues/stats', { params }),
+    get: (id: number) => request.get(`/issues/${id}`),
+    create: (data: any) => request.post('/issues', data),
+    update: (id: number, data: any) => request.put(`/issues/${id}`, data),
+    delete: (id: number) => request.delete(`/issues/${id}`),
+  },
+  lessons: {
+    list: (params?: any) => request.get('/issues/lessons', { params }),
+    get: (id: number) => request.get(`/issues/lessons/${id}`),
+    create: (data: any) => request.post('/issues/lessons', data),
+    update: (id: number, data: any) => request.put(`/issues/lessons/${id}`, data),
+    delete: (id: number) => request.delete(`/issues/lessons/${id}`),
+  },
+}
+
+// ==================== 项目报告 ====================
+export const projectReportApi = {
+  reports: {
+    list: (params?: any) => request.get('/project-reports', { params }),
+    get: (id: number) => request.get(`/project-reports/${id}`),
+    create: (data: any) => request.post('/project-reports', data),
+    update: (id: number, data: any) => request.put(`/project-reports/${id}`, data),
+    delete: (id: number) => request.delete(`/project-reports/${id}`),
+  },
+  kanban: {
+    list: (params?: any) => request.get('/project-reports/kanban', { params }),
+    get: (id: number) => request.get(`/project-reports/kanban/${id}`),
+    create: (data: any) => request.post('/project-reports/kanban', data),
+    update: (id: number, data: any) => request.put(`/project-reports/kanban/${id}`, data),
+    delete: (id: number) => request.delete(`/project-reports/kanban/${id}`),
+  },
+}
+
+// ==================== 结项与移交 ====================
+export const closureApi = {
+  closures: {
+    list: (params?: any) => request.get('/closures', { params }),
+    get: (id: number) => request.get(`/closures/${id}`),
+    create: (data: any) => request.post('/closures', data),
+    update: (id: number, data: any) => request.put(`/closures/${id}`, data),
+    delete: (id: number) => request.delete(`/closures/${id}`),
+    approve: (id: number) => request.put(`/closures/${id}/approve`),
+  },
+  handovers: {
+    list: (params?: any) => request.get('/closures/handovers', { params }),
+    get: (id: number) => request.get(`/closures/handovers/${id}`),
+    create: (data: any) => request.post('/closures/handovers', data),
+    update: (id: number, data: any) => request.put(`/closures/handovers/${id}`, data),
+    delete: (id: number) => request.delete(`/closures/handovers/${id}`),
+  },
+  traces: {
+    list: (params?: any) => request.get('/closures/traces', { params }),
+    get: (id: number) => request.get(`/closures/traces/${id}`),
+    create: (data: any) => request.post('/closures/traces', data),
+    update: (id: number, data: any) => request.put(`/closures/traces/${id}`, data),
+    delete: (id: number) => request.delete(`/closures/traces/${id}`),
+  },
+}
+
+// ==================== 供方协同 ====================
+export const supplierCollabApi = {
+  developments: {
+    list: (params?: any) => request.get('/supplier-collab/developments', { params }),
+    get: (id: number) => request.get(`/supplier-collab/developments/${id}`),
+    create: (data: any) => request.post('/supplier-collab/developments', data),
+    update: (id: number, data: any) => request.put(`/supplier-collab/developments/${id}`, data),
+    delete: (id: number) => request.delete(`/supplier-collab/developments/${id}`),
+  },
+  '8ds': {
+    list: (params?: any) => request.get('/supplier-collab/8ds', { params }),
+    get: (id: number) => request.get(`/supplier-collab/8ds/${id}`),
+    create: (data: any) => request.post('/supplier-collab/8ds', data),
+    update: (id: number, data: any) => request.put(`/supplier-collab/8ds/${id}`, data),
+    delete: (id: number) => request.delete(`/supplier-collab/8ds/${id}`),
+  },
+  performances: {
+    list: (params?: any) => request.get('/supplier-collab/performances', { params }),
+    get: (id: number) => request.get(`/supplier-collab/performances/${id}`),
+    create: (data: any) => request.post('/supplier-collab/performances', data),
+    update: (id: number, data: any) => request.put(`/supplier-collab/performances/${id}`, data),
+    delete: (id: number) => request.delete(`/supplier-collab/performances/${id}`),
+  },
+}
+
+// ==================== 知识库 ====================
+export const knowledgeApi = {
+  lessons: {
+    list: (params?: any) => request.get('/knowledge/lessons', { params }),
+    get: (id: number) => request.get(`/knowledge/lessons/${id}`),
+    create: (data: any) => request.post('/knowledge/lessons', data),
+    update: (id: number, data: any) => request.put(`/knowledge/lessons/${id}`, data),
+    delete: (id: number) => request.delete(`/knowledge/lessons/${id}`),
+  },
+  templates: {
+    list: (params?: any) => request.get('/knowledge/templates', { params }),
+    get: (id: number) => request.get(`/knowledge/templates/${id}`),
+    create: (data: any) => request.post('/knowledge/templates', data),
+    update: (id: number, data: any) => request.put(`/knowledge/templates/${id}`, data),
+    delete: (id: number) => request.delete(`/knowledge/templates/${id}`),
+  },
+  checklists: {
+    list: (params?: any) => request.get('/knowledge/checklists', { params }),
+    get: (id: number) => request.get(`/knowledge/checklists/${id}`),
+    create: (data: any) => request.post('/knowledge/checklists', data),
+    update: (id: number, data: any) => request.put(`/knowledge/checklists/${id}`, data),
+    delete: (id: number) => request.delete(`/knowledge/checklists/${id}`),
+  },
+}
+
+// ==================== 信息安全 ====================
+export const securityApi = {
+  tara: {
+    list: (params?: any) => request.get('/security/tara', { params }),
+    get: (id: number) => request.get(`/security/tara/${id}`),
+    create: (data: any) => request.post('/security/tara', data),
+    update: (id: number, data: any) => request.put(`/security/tara/${id}`, data),
+    delete: (id: number) => request.delete(`/security/tara/${id}`),
+  },
+  cyberRequirements: {
+    list: (params?: any) => request.get('/security/cyber-requirements', { params }),
+    get: (id: number) => request.get(`/security/cyber-requirements/${id}`),
+    create: (data: any) => request.post('/security/cyber-requirements', data),
+    update: (id: number, data: any) => request.put(`/security/cyber-requirements/${id}`, data),
+    delete: (id: number) => request.delete(`/security/cyber-requirements/${id}`),
+  },
+  vulnerabilities: {
+    list: (params?: any) => request.get('/security/vulnerabilities', { params }),
+    get: (id: number) => request.get(`/security/vulnerabilities/${id}`),
+    create: (data: any) => request.post('/security/vulnerabilities', data),
+    update: (id: number, data: any) => request.put(`/security/vulnerabilities/${id}`, data),
+    delete: (id: number) => request.delete(`/security/vulnerabilities/${id}`),
+  },
+  csms: {
+    list: (params?: any) => request.get('/security/csms', { params }),
+    get: (id: number) => request.get(`/security/csms/${id}`),
+    create: (data: any) => request.post('/security/csms', data),
+    update: (id: number, data: any) => request.put(`/security/csms/${id}`, data),
+    delete: (id: number) => request.delete(`/security/csms/${id}`),
+  },
+  supplyChains: {
+    list: (params?: any) => request.get('/security/supply-chains', { params }),
+    get: (id: number) => request.get(`/security/supply-chains/${id}`),
+    create: (data: any) => request.post('/security/supply-chains', data),
+    update: (id: number, data: any) => request.put(`/security/supply-chains/${id}`, data),
+    delete: (id: number) => request.delete(`/security/supply-chains/${id}`),
+  },
+}
+
+// ==================== 安全审计 ====================
+export const securityAuditApi = {
+  audits: {
+    list: (params?: any) => request.get('/security-audits', { params }),
+    get: (id: number) => request.get(`/security-audits/${id}`),
+    create: (data: any) => request.post('/security-audits', data),
+    update: (id: number, data: any) => request.put(`/security-audits/${id}`, data),
+    delete: (id: number) => request.delete(`/security-audits/${id}`),
+  },
+  reports: {
+    list: (params?: any) => request.get('/security-audits/reports', { params }),
+    get: (id: number) => request.get(`/security-audits/reports/${id}`),
+    create: (data: any) => request.post('/security-audits/reports', data),
+    update: (id: number, data: any) => request.put(`/security-audits/reports/${id}`, data),
+    delete: (id: number) => request.delete(`/security-audits/reports/${id}`),
+  },
+}
+
+// ==================== 数据分析 ====================
+export const analyticsApi = {
+  projectStats: (params?: any) => request.get('/analytics/project-stats', { params }),
+  costStats: (params?: any) => request.get('/analytics/cost-stats', { params }),
+  qualityStats: (params?: any) => request.get('/analytics/quality-stats', { params }),
+  supplierStats: (params?: any) => request.get('/analytics/supplier-stats', { params }),
+  safetyStats: (params?: any) => request.get('/analytics/safety-stats', { params }),
+  trends: (params?: any) => request.get('/analytics/trends', { params }),
+}
+
+// ==================== 系统配置 ====================
+export const configApi = {
+  list: () => request.get('/system/config'),
+  get: (key: string) => request.get(`/system/config/${key}`),
+  upsert: (key: string, data: { configValue: string; description?: string }) =>
+    request.put(`/system/config/${key}`, data),
+  delete: (key: string) => request.delete(`/system/config/${key}`),
+  batch: (items: Array<{ configKey: string; configValue: string; description?: string }>) =>
+    request.post('/system/config/batch', items),
+}

@@ -21,6 +21,14 @@ import { FmeaModule } from './modules/fmea/fmea.module'
 import { ChangeModule } from './modules/change/change.module'
 import { DashboardModule } from './modules/dashboard/dashboard.module'
 import { SafetyModule } from './modules/safety/safety.module'
+import { IssueModule } from './modules/issue/issue.module'
+import { ProjectReportModule } from './modules/project-report/project-report.module'
+import { ClosureModule } from './modules/closure/closure.module'
+import { SupplierCollabModule } from './modules/supplier-collab/supplier-collab.module'
+import { KnowledgeModule } from './modules/knowledge/knowledge.module'
+import { SecurityModule } from './modules/security/security.module'
+import { SecurityAuditModule } from './modules/security-audit/security-audit.module'
+import { AnalyticsModule } from './modules/analytics/analytics.module'
 
 @Module({
   imports: [
@@ -48,6 +56,14 @@ import { SafetyModule } from './modules/safety/safety.module'
     ChangeModule,
     DashboardModule,
     SafetyModule,
+    IssueModule,
+    ProjectReportModule,
+    ClosureModule,
+    SupplierCollabModule,
+    KnowledgeModule,
+    SecurityModule,
+    SecurityAuditModule,
+    AnalyticsModule,
   ],
   providers: [PrismaService],
   exports: [PrismaService],

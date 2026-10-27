@@ -2,7 +2,10 @@
   <div class="page-container">
     <div class="page-header">
       <h2>客户管理</h2>
-      <el-button type="primary" @click="showCreateDialog">新增客户</el-button>
+      <div>
+        <el-button @click="handleExport">导出CSV</el-button>
+        <el-button type="primary" @click="showCreateDialog">新增客户</el-button>
+      </div>
     </div>
 
     <div class="search-bar">
@@ -124,5 +127,24 @@ async function handleDelete(id: number) {
   await masterDataApi.customers.delete(id)
   ElMessage.success('删除成功')
   loadData()
+}
+
+function handleExport() {
+  const token = localStorage.getItem('token')
+  const params = new URLSearchParams()
+  if (search.keyword) params.set('keyword', search.keyword)
+  const url = `/api/v1/master-data/customers/export?${params.toString()}`
+  fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    .then(res => res.blob())
+    .then(blob => {
+      const objectUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = objectUrl
+      a.download = `customers_${Date.now()}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(objectUrl)
+    })
 }
 </script>

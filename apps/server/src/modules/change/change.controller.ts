@@ -1,9 +1,11 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query, Req,
+  Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards,
 } from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
 import { ChangeService } from './change.service'
 
 @Controller('change')
+@UseGuards(AuthGuard('jwt'))
 export class ChangeController {
   constructor(private readonly changeService: ChangeService) {}
 

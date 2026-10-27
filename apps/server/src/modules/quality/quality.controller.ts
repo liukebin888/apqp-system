@@ -1,9 +1,11 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query, Req,
+  Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards,
 } from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
 import { QualityService } from './quality.service'
 
 @Controller('quality')
+@UseGuards(AuthGuard('jwt'))
 export class QualityController {
   constructor(private readonly service: QualityService) {}
 

@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <h1 class="login-title">APQP 项目管理系统</h1>
+      <h1 class="login-title">魔程化解项目管理系统</h1>
       <p class="login-subtitle">汽车零部件行业项目管理平台</p>
       <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="handleLogin">
         <el-form-item prop="username">

@@ -1,9 +1,11 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query, Req,
+  Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards,
 } from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
 import { ProcurementService } from './procurement.service'
 
 @Controller('procurement')
+@UseGuards(AuthGuard('jwt'))
 export class ProcurementController {
   constructor(private readonly service: ProcurementService) {}
 

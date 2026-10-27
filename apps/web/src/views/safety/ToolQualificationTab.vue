@@ -78,10 +78,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { safetyApi } from '@/api'
+import { safetyApi, projectApi } from '@/api'
 import { TOOL_CONFIDENCE_LEVEL, TOOL_QUALIFICATION_STATUS, TOOL_TYPE } from '@apqp/shared/constants/safety.constants'
 import { ElMessage } from 'element-plus'
-import { request } from '@/api'
 
 const props = defineProps<{ projectId: number }>()
 const list = ref<any[]>([])
@@ -105,7 +104,7 @@ async function loadData() {
 }
 
 async function loadProjects() {
-  const res = await request.get('/projects', { params: { take: 200 } })
+  const res = await projectApi.list({ take: 200 })
   projects.value = res.data.items || []
 }
 

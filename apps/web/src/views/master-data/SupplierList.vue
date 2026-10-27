@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <div class="page-header"><h2>供应商管理</h2><el-button type="primary" @click="showCreateDialog">新增供应商</el-button></div>
+    <div class="page-header"><h2>供应商管理</h2><div><el-button @click="handleExport">导出CSV</el-button><el-button type="primary" @click="showCreateDialog">新增供应商</el-button></div></div>
     <div class="search-bar">
       <el-input v-model="search.keyword" placeholder="搜索供应商编码/名称" clearable style="width: 220px" @keyup.enter="loadData" />
       <el-button @click="loadData">查询</el-button>
@@ -59,4 +59,22 @@ function showCreateDialog() { editingItem.value = null; Object.assign(form, { su
 function showEditDialog(row: any) { editingItem.value = row; Object.assign(form, { supplierCode: row.supplierCode, supplierName: row.supplierName, creditCode: row.creditCode, contactName: row.contactName, contactPhone: row.contactPhone, address: row.address }); dialogVisible.value = true }
 async function handleSubmit() { const valid = await formRef.value?.validate().catch(() => false); if (!valid) return; submitting.value = true; try { if (editingItem.value) { await masterDataApi.suppliers.update(editingItem.value.id, form); ElMessage.success('更新成功') } else { await masterDataApi.suppliers.create(form); ElMessage.success('创建成功') }; dialogVisible.value = false; loadData() } finally { submitting.value = false } }
 async function handleDelete(id: number) { await masterDataApi.suppliers.delete(id); ElMessage.success('删除成功'); loadData() }
+function handleExport() {
+  const token = localStorage.getItem('token')
+  const params = new URLSearchParams()
+  if (search.keyword) params.set('keyword', search.keyword)
+  const url = `/api/v1/master-data/suppliers/export?${params.toString()}`
+  fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    .then(res => res.blob())
+    .then(blob => {
+      const objectUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = objectUrl
+      a.download = `suppliers_${Date.now()}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(objectUrl)
+    })
+}
 </script>

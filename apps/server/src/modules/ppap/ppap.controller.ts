@@ -1,9 +1,11 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query, Req,
+  Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards,
 } from '@nestjs/common'
+import { AuthGuard } from '@nestjs/passport'
 import { PpapService } from './ppap.service'
 
 @Controller('ppap')
+@UseGuards(AuthGuard('jwt'))
 export class PpapController {
   constructor(private readonly service: PpapService) {}
 

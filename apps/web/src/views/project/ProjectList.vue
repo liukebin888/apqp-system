@@ -2,7 +2,10 @@
   <div class="page-container">
     <div class="page-header">
       <h2>项目列表</h2>
-      <el-button type="primary" @click="$router.push('/projects/create')">新建项目</el-button>
+      <div>
+        <el-button @click="handleExport">导出CSV</el-button>
+        <el-button type="primary" @click="$router.push('/projects/create')">新建项目</el-button>
+      </div>
     </div>
 
     <div class="search-bar">
@@ -86,5 +89,28 @@ async function loadData() {
     tableData.value = res.list
     pagination.total = res.total
   } finally { loading.value = false }
+}
+
+function handleExport() {
+  const token = localStorage.getItem('token')
+  const params = new URLSearchParams()
+  if (search.keyword) params.set('keyword', search.keyword)
+  if (search.status) params.set('status', search.status)
+  const url = `/api/v1/projects/export?${params.toString()}`
+  const a = document.createElement('a')
+  a.href = url
+  a.setAttribute('download', '')
+  // Use fetch with auth header for CSV download
+  fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    .then(res => res.blob())
+    .then(blob => {
+      const objectUrl = URL.createObjectURL(blob)
+      a.href = objectUrl
+      a.download = `projects_${Date.now()}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(objectUrl)
+    })
 }
 </script>

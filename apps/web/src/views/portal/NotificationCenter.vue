@@ -63,8 +63,9 @@ async function loadData() {
     const params: any = { page: pagination.page, pageSize: pagination.pageSize }
     if (activeTab.value === 'unread') params.isRead = false
     const res: any = await notificationApi.list(params)
-    tableData.value = res?.list || []
-    pagination.total = res?.total || 0
+    const data = res.data?.data || res.data || res
+    tableData.value = data?.list || data || []
+    pagination.total = data?.total || 0
   } finally { loading.value = false }
 }
 

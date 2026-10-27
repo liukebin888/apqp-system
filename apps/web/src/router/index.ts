@@ -46,6 +46,18 @@ const router = createRouter({
           component: () => import('@/views/system/AuditLogView.vue'),
           meta: { title: '审计日志', icon: 'Document', group: 'system' },
         },
+        {
+          path: 'system/config',
+          name: 'SystemConfig',
+          component: () => import('@/views/system/SystemConfigView.vue'),
+          meta: { title: '系统参数', icon: 'Setting', group: 'system' },
+        },
+        {
+          path: 'system/project-tiers',
+          name: 'ProjectTierConfig',
+          component: () => import('@/views/system/ProjectTierConfig.vue'),
+          meta: { title: '项目分级配置', icon: 'Rank', group: 'system' },
+        },
         // ---- 主数据 ----
         {
           path: 'master-data/customers',
@@ -208,14 +220,90 @@ const router = createRouter({
           path: 'functional-safety',
           name: 'FunctionalSafety',
           component: () => import('@/views/safety/FunctionalSafetyView.vue'),
-          meta: { title: '功能安全', icon: 'Shield', group: 'safety' },
+          meta: { title: '功能安全', icon: 'Finished', group: 'safety' },
+        },
+        // ---- 问题管理 ----
+        {
+          path: 'issues',
+          name: 'IssueManagement',
+          component: () => import('@/views/issue/IssueView.vue'),
+          meta: { title: '问题管理', icon: 'Warning', group: 'issue' },
+        },
+        // ---- A-SPICE 需求管理 ----
+        {
+          path: 'aspice-requirements',
+          name: 'AspiceRequirements',
+          component: () => import('@/views/aspice/AspiceRequirementView.vue'),
+          meta: { title: 'A-SPICE 需求管理', icon: 'Notebook', group: 'aspice' },
+        },
+        // ---- 信息安全 ----
+        {
+          path: 'security',
+          name: 'Security',
+          component: () => import('@/views/security/SecurityView.vue'),
+          meta: { title: '信息安全', icon: 'Lock', group: 'security' },
+        },
+        // ---- 结项与移交 ----
+        {
+          path: 'closures',
+          name: 'Closure',
+          component: () => import('@/views/closure/ClosureView.vue'),
+          meta: { title: '结项与移交', icon: 'CircleCheckFilled', group: 'closure' },
+        },
+        // ---- 供方协同 ----
+        {
+          path: 'supplier-collab',
+          name: 'SupplierCollab',
+          component: () => import('@/views/supplier/SupplierCollabView.vue'),
+          meta: { title: '供方协同', icon: 'Van', group: 'supplier' },
+        },
+        // ---- 知识库 ----
+        {
+          path: 'knowledge',
+          name: 'Knowledge',
+          component: () => import('@/views/knowledge/KnowledgeView.vue'),
+          meta: { title: '知识库', icon: 'Collection', group: 'knowledge' },
+        },
+        // ---- 数据分析 ----
+        {
+          path: 'analytics',
+          name: 'Analytics',
+          component: () => import('@/views/analytics/AnalyticsView.vue'),
+          meta: { title: '数据分析', icon: 'PieChart', group: 'analytics' },
+        },
+        // ---- 安全审计 ----
+        {
+          path: 'security-audits',
+          name: 'SecurityAudit',
+          component: () => import('@/views/audit/SecurityAuditView.vue'),
+          meta: { title: '安全审计', icon: 'View', group: 'audit' },
+        },
+        // ---- 项目看板 ----
+        {
+          path: 'project-kanban',
+          name: 'ProjectKanban',
+          component: () => import('@/views/project/KanbanView.vue'),
+          meta: { title: '项目看板', icon: 'Grid', group: 'project' },
+        },
+        // ---- 进度报告 ----
+        {
+          path: 'progress-reports',
+          name: 'ProgressReports',
+          component: () => import('@/views/project/ProgressReportView.vue'),
+          meta: { title: '进度报告', icon: 'Ticket', group: 'project' },
         },
         // ---- 通知 ----
+        {
+          path: 'my-tasks',
+          name: 'MyTasks',
+          component: () => import('@/views/portal/MyTasksView.vue'),
+          meta: { title: '我的任务', icon: 'List', group: 'portal' },
+        },
         {
           path: 'notifications',
           name: 'NotificationCenter',
           component: () => import('@/views/portal/NotificationCenter.vue'),
-          meta: { title: '通知中心', icon: 'Bell', hidden: true },
+          meta: { title: '消息中心', icon: 'Bell', group: 'portal' },
         },
       ],
     },

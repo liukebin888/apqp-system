@@ -2,8 +2,8 @@
   <el-container class="main-layout">
     <el-aside :width="isCollapse ? '64px' : '220px'" class="sidebar">
       <div class="logo">
-        <span v-if="!isCollapse">APQP 项目管理</span>
-        <span v-else>AQ</span>
+        <span v-if="!isCollapse">魔程化解 项目管理</span>
+        <span v-else>MC</span>
       </div>
       <el-menu
         :default-active="currentRoute"
@@ -13,10 +13,15 @@
         text-color="#bfcbd9"
         active-text-color="#409eff"
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><HomeFilled /></el-icon>
-          <template #title>工作台</template>
-        </el-menu-item>
+        <el-sub-menu index="portal">
+          <template #title>
+            <el-icon><HomeFilled /></el-icon>
+            <span>工作台</span>
+          </template>
+          <el-menu-item index="/dashboard">工作台</el-menu-item>
+          <el-menu-item index="/my-tasks">我的任务</el-menu-item>
+          <el-menu-item index="/notifications">消息中心</el-menu-item>
+        </el-sub-menu>
 
         <el-sub-menu index="project">
           <template #title>
@@ -24,6 +29,8 @@
             <span>项目进度</span>
           </template>
           <el-menu-item index="/projects">项目列表</el-menu-item>
+          <el-menu-item index="/project-kanban">项目看板</el-menu-item>
+          <el-menu-item index="/progress-reports">进度报告</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="workflow">
@@ -35,11 +42,6 @@
           <el-menu-item index="/workflow/approval-center">审批中心</el-menu-item>
           <el-menu-item index="/workflow/my-initiated">我发起的</el-menu-item>
         </el-sub-menu>
-
-        <el-menu-item index="/documents">
-          <el-icon><Document /></el-icon>
-          <template #title>文档管理</template>
-        </el-menu-item>
 
         <el-menu-item index="/pre-project">
           <el-icon><TrendCharts /></el-icon>
@@ -60,15 +62,6 @@
           <el-menu-item index="/ppap">PPAP 提报管理</el-menu-item>
         </el-sub-menu>
 
-        <el-menu-item index="/cost">
-          <el-icon><Money /></el-icon>
-          <template #title>成本管理</template>
-        </el-menu-item>
-
-        <el-menu-item index="/procurement">
-          <el-icon><ShoppingCart /></el-icon>
-          <template #title>采购管理</template>
-        </el-menu-item>
         <el-menu-item index="/quality">
           <el-icon><CircleCheck /></el-icon>
           <template #title>质量管理</template>
@@ -81,9 +74,49 @@
           <el-icon><Switch /></el-icon>
           <template #title>工程变更管理</template>
         </el-menu-item>
+        <el-menu-item index="/issues">
+          <el-icon><Warning /></el-icon>
+          <template #title>问题管理</template>
+        </el-menu-item>
         <el-menu-item index="/functional-safety">
-          <el-icon><Shield /></el-icon>
+          <el-icon><Finished /></el-icon>
           <template #title>功能安全</template>
+        </el-menu-item>
+        <el-menu-item index="/aspice-requirements">
+          <el-icon><Notebook /></el-icon>
+          <template #title>A-SPICE 需求管理</template>
+        </el-menu-item>
+        <el-menu-item index="/security">
+          <el-icon><Lock /></el-icon>
+          <template #title>信息安全</template>
+        </el-menu-item>
+        <el-menu-item index="/closures">
+          <el-icon><CircleCheckFilled /></el-icon>
+          <template #title>结项与移交</template>
+        </el-menu-item>
+        <el-menu-item index="/cost">
+          <el-icon><Money /></el-icon>
+          <template #title>成本管理</template>
+        </el-menu-item>
+        <el-menu-item index="/procurement">
+          <el-icon><ShoppingCart /></el-icon>
+          <template #title>采购管理</template>
+        </el-menu-item>
+        <el-menu-item index="/supplier-collab">
+          <el-icon><Van /></el-icon>
+          <template #title>供方协同</template>
+        </el-menu-item>
+        <el-menu-item index="/knowledge">
+          <el-icon><Collection /></el-icon>
+          <template #title>知识库</template>
+        </el-menu-item>
+        <el-menu-item index="/documents">
+          <el-icon><Document /></el-icon>
+          <template #title>文档管理</template>
+        </el-menu-item>
+        <el-menu-item index="/analytics">
+          <el-icon><PieChart /></el-icon>
+          <template #title>数据分析</template>
         </el-menu-item>
 
         <el-sub-menu index="master-data">
@@ -105,6 +138,9 @@
           <el-menu-item index="/system/roles">角色管理</el-menu-item>
           <el-menu-item index="/system/departments">组织架构</el-menu-item>
           <el-menu-item index="/system/audit-logs">审计日志</el-menu-item>
+          <el-menu-item index="/system/config">系统参数</el-menu-item>
+          <el-menu-item index="/system/project-tiers">项目分级配置</el-menu-item>
+          <el-menu-item index="/security-audits">安全审计</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
@@ -176,7 +212,7 @@ function handleCommand(command: string) {
 .sidebar {
   background-color: #304156;
   transition: width 0.3s;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .logo {
