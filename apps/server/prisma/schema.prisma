@@ -166,6 +166,11 @@ model SysUser {
   complianceReportsCreated ComplianceReport[]    @relation("ComplianceReportCreator")
   favoriteMenus           SysFavoriteMenu[] @relation("FavoriteMenuUser")
   kanbanConfigsCreated    PrjKanbanConfig[] @relation("KanbanConfigCreator")
+  apqpChecklistsCreated   ApqpChecklist[]   @relation("ApqpChecklistCreator")
+  apqpChecklistItemsChecked ApqpChecklistItem[] @relation("ApqpChecklistChecker")
+  aspiceProcessesAssessed AspiceProcess[]   @relation("AspiceAssessor")
+  otsDocChecklistsCreated OtsDocChecklist[] @relation("OtsDocChecklistCreator")
+  otsDocChecklistItemsReviewed OtsDocChecklistItem[] @relation("OtsDocReviewer")
 
   @@map("sys_users")
 }
@@ -590,6 +595,24 @@ model PrjProject {
   startDate       DateTime?
   endDate         DateTime?
   apqpPhase       Int       @default(1) @db.TinyInt // 1-5 APQP phases
+  grdLevel        String?   @db.VarChar(10) // GRD-A/GRD-B/GRD-C
+  techDifficulty  String?   @db.VarChar(10) // L1-L4 技术难度评定
+  salesScale      String?   @db.VarChar(10) // L1-L4 销售规模评定
+  projectGrade    String?   @db.VarChar(10) // 综合等级 L1-L4
+  firstSampleDate DateTime? // 首次交样时间
+  otsDate         DateTime? // OTS认可时间
+  sopDate         DateTime? // SOP量产时间
+  targetCost      Decimal?  @db.Decimal(12, 2) // 目标成本
+  targetPrice     Decimal?  @db.Decimal(12, 2) // 目标售价
+  annualVolume    Int?      @db.UnsignedInt // 预计年需求量
+  productFunction String?   @db.Text // 产品主要功能
+  techFeasibility String?   @db.Text // 技术可行性
+  mfgFeasibility  String?   @db.Text // 制造可行性
+  resourceEstimate String?  @db.Text // 资源投入估算
+  projectRiskNote String?   @db.Text // 项目风险与对策
+  specialRequirements Json? // ASPICE/功能安全/信息安全 特殊要求
+  initiationRecommendation String? @db.VarChar(20) // 建议立项/有条件立项/不立项
+  gateConclusion  String?   @db.VarChar(20) // 门禁结论: 通过/有条件通过/不通过
   description     String?   @db.Text
   workflowInstanceId Int?    @db.UnsignedInt
   hasFunctionalSafety Boolean @default(false)
@@ -659,6 +682,9 @@ model PrjProject {
   secSupplyChains  SecSupplyChain[]
   kanbanConfigs    PrjKanbanConfig[]
   kbLessons        KbLesson[]
+  apqpChecklists   ApqpChecklist[]
+  aspiceProcesses  AspiceProcess[]
+  otsDocChecklists OtsDocChecklist[]
 
   @@index([status])
   @@index([managerId])
@@ -762,6 +788,8 @@ model PrjRisk {
   ownerUserId      Int?      @db.UnsignedInt
   status           String    @default("open") @db.VarChar(20) // open/mitigating/closed/accepted
   responseStrategy String?   @db.VarChar(20) // avoid/mitigate/transfer/accept
+  responseMeasure  String?   @db.Text // 应对措施
+  escalationTrigger String?  @db.Text // 升级触发条件
   identifiedAt     DateTime  @default(now())
   closedAt         DateTime?
 
@@ -1259,6 +1287,8 @@ model OtsSample {
   manufactureDate DateTime?
   submitDate      DateTime?
   status          String    @default("planned") @db.VarChar(20) // planned/in_production/submitted/testing/approved/rejected
+  conclusionType  String?   @db.VarChar(20) // formal/deviation/temporary/rejected
+  threeConditionCheck Json? // 三条件核查: {conditionA: {met, note}, conditionB: {met, note}, conditionC: {met, note}}
   customerId      Int       @db.UnsignedInt
   remarks         String?   @db.Text
   createdById     Int       @db.UnsignedInt
@@ -1271,6 +1301,7 @@ model OtsSample {
   reports         OtsReport[]
   testRecords     OtsTestRecord[]
   approvals       OtsApproval[]
+  docChecklists   OtsDocChecklist[]
 
   @@index([projectId, status])
   @@index([customerId])
@@ -2209,6 +2240,18 @@ model ChgEcr {
   safetyRelated           Boolean   @default(false)
   customerNotified        Boolean   @default(false)
   ppapResubmissionRequired Boolean  @default(false)
+  techFeasibility         String?   @db.Text // 技术可行性确认
+  verificationRequirement String?   @db.Text // 验证要求
+  techFeasibilityConclusion String? @db.VarChar(20) // 可行/有条件可行/不可行
+  impactProduct           Json? // 产品影响范围盘点
+  impactParts             Json? // 零件影响范围盘点
+  techDocChanges          Json? // 技术文件变更清单
+  costImpactSummary       String?   @db.Text // 成本影响汇总
+  deliveryImpact         String?   @db.Text // 交付影响
+  customerApprovalNeeded  Boolean   @default(false)
+  customerApprovalId     String?   @db.VarChar(100)
+  switchPointDate        DateTime? // 切换点日期
+  implementationComplete  Boolean   @default(false)
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
@@ -2794,6 +2837,12 @@ model QualityIssue {
   closedAt    DateTime?
   source      String?   @db.VarChar(50) // internal/audit/customer/supplier
   related8DId Int?      @db.UnsignedInt
+  eightDStage String?   @db.VarChar(10) // D0-D8 当前阶段
+  ica         String?   @db.Text // 临时围堵措施
+  pca         String?   @db.Text // 永久纠正措施及有效性验证
+  customerNotice String? @db.VarChar(20) // 客户通报: 24h初报/随周报/不通报
+  targetCloseDate DateTime?
+  evidenceDocNo String? @db.VarChar(100) // 证据/8D报告编号
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -3232,4 +3281,136 @@ model SysFavoriteMenu {
   @@unique([userId, menuPath])
   @@index([userId])
   @@map("sys_favorite_menus")
+}
+
+// ============================================================
+// Layer 5: 表单中心 — APQP 检查表 / ASPICE 跟踪 / OTS 文档检查表
+// ============================================================
+
+// ==================== 03-APQP检查表 ====================
+
+model ApqpChecklist {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId    Int       @db.UnsignedInt
+  name         String    @db.VarChar(100)
+  phase        String    @db.VarChar(10) // phase1-phase5
+  status       String    @default("open") @db.VarChar(20) // open/in_progress/completed
+  completedPct Decimal   @default(0) @db.Decimal(5, 2)
+  createdById  Int       @db.UnsignedInt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  project      PrjProject          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy    SysUser             @relation("ApqpChecklistCreator", fields: [createdById], references: [id])
+  items        ApqpChecklistItem[]
+
+  @@index([projectId, phase])
+  @@map("apqp_checklists")
+}
+
+model ApqpChecklistItem {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  checklistId Int       @db.UnsignedInt
+  sortOrder   Int       @default(0) @db.TinyInt
+  checkDomain String?   @db.VarChar(50) // 检查域: 计划定义/产品设计/过程设计/产品确认/量产反馈
+  checkItem   String    @db.Text
+  responsible String?   @db.VarChar(50) // 责任人
+  result      String    @default("pending") @db.VarChar(20) // pending/pass/fail/na
+  evidence    String?   @db.Text // 证据/文件编号
+  checkedById Int?      @db.UnsignedInt
+  checkedAt   DateTime?
+
+  checklist   ApqpChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  checkedBy   SysUser?      @relation("ApqpChecklistChecker", fields: [checkedById], references: [id])
+
+  @@index([checklistId])
+  @@map("apqp_checklist_items")
+}
+
+// ==================== 10-ASPICE跟踪 ====================
+
+model AspiceProcess {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId      Int       @db.UnsignedInt
+  processGroup   String    @db.VarChar(10) // SYS/SWE/SUP/MAN/ACQ/HW/MECH
+  processId      String    @db.VarChar(20) // SYS.2, SWE.1, etc.
+  processName    String    @db.VarChar(200)
+  targetLevel    Int       @default(1) @db.TinyInt // CL1-CL5
+  achievedLevel  Int       @default(0) @db.TinyInt
+  evidenceReady  String    @default("not_ready") @db.VarChar(20) // not_ready/partial/ready
+  assessmentStatus String  @default("planned") @db.VarChar(20) // planned/in_progress/assessed/gap_analysis
+  assessorId     Int?      @db.UnsignedInt
+  assessmentDate DateTime?
+  conclusion     String?   @db.Text
+  evidenceRef    String?   @db.Text // 主要证据/基线
+  createdById    Int       @db.UnsignedInt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  project        PrjProject          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assessor       SysUser?            @relation("AspiceAssessor", fields: [assessorId], references: [id])
+  practices      AspiceBasePractice[]
+
+  @@unique([projectId, processId])
+  @@index([projectId, processGroup])
+  @@map("aspice_processes")
+}
+
+model AspiceBasePractice {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  processId    Int       @db.UnsignedInt
+  bpCode       String    @db.VarChar(20) // BP1, BP2, etc.
+  description  String    @db.Text
+  rating       String    @default("N") @db.VarChar(5) // F/L/P/N
+  evidence     String?   @db.Text
+  objectType   String?   @db.VarChar(30) // requirement/test/design_doc/etc
+  objectId     Int?      @db.UnsignedInt
+  sortOrder    Int       @default(0) @db.TinyInt
+
+  process      AspiceProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  @@index([processId])
+  @@map("aspice_base_practices")
+}
+
+// ==================== 13A-OTS文档检查表 ====================
+
+model OtsDocChecklist {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  projectId    Int       @db.UnsignedInt
+  otsSampleId  Int?      @db.UnsignedInt
+  name         String    @db.VarChar(100)
+  status       String    @default("open") @db.VarChar(20) // open/in_progress/completed
+  completedPct Decimal   @default(0) @db.Decimal(5, 2)
+  createdById  Int       @db.UnsignedInt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  project      PrjProject          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  otsSample    OtsSample?          @relation(fields: [otsSampleId], references: [id])
+  createdBy    SysUser             @relation("OtsDocChecklistCreator", fields: [createdById], references: [id])
+  items        OtsDocChecklistItem[]
+
+  @@index([projectId])
+  @@map("ots_doc_checklists")
+}
+
+model OtsDocChecklistItem {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  checklistId  Int       @db.UnsignedInt
+  sortOrder    Int       @default(0) @db.TinyInt
+  docCategory  String    @db.VarChar(50) // 文档类别
+  docName      String    @db.VarChar(200)
+  status       String    @default("missing") @db.VarChar(20) // missing/uploaded/reviewed/approved
+  archiveNo    String?   @db.VarChar(100) // 归档编号
+  documentId   Int?      @db.UnsignedInt
+  reviewerId   Int?      @db.UnsignedInt
+  reviewedAt   DateTime?
+  notes        String?   @db.Text
+
+  checklist    OtsDocChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  reviewer     SysUser?        @relation("OtsDocReviewer", fields: [reviewerId], references: [id])
+
+  @@index([checklistId])
+  @@map("ots_doc_checklist_items")
 }

@@ -1,0 +1,231 @@
+// 表单中心配置 — 18 张确认表单的元数据与 APQP 阶段映射
+
+export const FORM_CATEGORIES = {
+  overview: '流程总览',
+  initiation: '立项与计划',
+  design: '产品设计',
+  process: '过程设计',
+  confirmation: '产品确认',
+  production: '量产管理',
+  crosscutting: '跨阶段管控',
+  safety_security: '安全与合规',
+} as const;
+
+export interface FormDefinition {
+  id: string;
+  code: string;
+  name: string;
+  category: keyof typeof FORM_CATEGORIES;
+  apqpPhases: number[]; // 适用的 APQP 阶段 (1-5)
+  gateInput?: string; // 作为哪个门禁的输入
+  routeName: string; // 前端路由名
+  icon: string; // Element Plus 图标名
+  description: string;
+}
+
+export const FORM_DEFINITIONS: FormDefinition[] = [
+  {
+    id: 'process-overview',
+    code: '00',
+    name: '流程总览',
+    category: 'overview',
+    apqpPhases: [1, 2, 3, 4, 5],
+    routeName: 'ProcessOverview',
+    icon: 'MapLocation',
+    description: 'APQP 五阶段 / 五道门禁流程总览',
+  },
+  {
+    id: 'initiation',
+    code: '01',
+    name: '立项申请书',
+    category: 'initiation',
+    apqpPhases: [1],
+    gateInput: 'G1',
+    routeName: 'ProjectCreate',
+    icon: 'Document',
+    description: '项目立项申请（GRD/L 评定、可行性评估）',
+  },
+  {
+    id: 'project-plan',
+    code: '02',
+    name: '项目计划',
+    category: 'initiation',
+    apqpPhases: [1, 2, 3, 4, 5],
+    routeName: 'ProjectSchedule',
+    icon: 'Calendar',
+    description: '项目里程碑计划表（P1–P8 + 并行节点）',
+  },
+  {
+    id: 'apqp-checklist',
+    code: '03',
+    name: 'APQP 检查表',
+    category: 'overview',
+    apqpPhases: [1, 2, 3, 4, 5],
+    routeName: 'ApqpChecklist',
+    icon: 'Checked',
+    description: 'APQP 全域检查表（五阶段核查）',
+  },
+  {
+    id: 'ots-application',
+    code: '04',
+    name: 'OTS 申请单',
+    category: 'confirmation',
+    apqpPhases: [4],
+    gateInput: 'G4',
+    routeName: 'OtsList',
+    icon: 'Box',
+    description: 'OTS 样件申请与认可（三条件核查）',
+  },
+  {
+    id: 'ppap-checklist',
+    code: '05',
+    name: 'PPAP 清单',
+    category: 'confirmation',
+    apqpPhases: [4, 5],
+    gateInput: 'G4',
+    routeName: 'PpapList',
+    icon: 'FolderOpened',
+    description: 'PPAP 文件提交清单',
+  },
+  {
+    id: 'change-request',
+    code: '06',
+    name: '变更申请单',
+    category: 'crosscutting',
+    apqpPhases: [1, 2, 3, 4, 5],
+    routeName: 'ChangeManagement',
+    icon: 'Switch',
+    description: '设计变更申请（ECR/ECN 全过程管控）',
+  },
+  {
+    id: 'issue-tracking',
+    code: '07',
+    name: '问题跟踪表',
+    category: 'crosscutting',
+    apqpPhases: [1, 2, 3, 4, 5],
+    routeName: 'IssueManagement',
+    icon: 'Warning',
+    description: '问题跟踪（8D 全程深度管控）',
+  },
+  {
+    id: 'review-record',
+    code: '08',
+    name: '评审记录',
+    category: 'overview',
+    apqpPhases: [1, 2, 3, 4, 5],
+    routeName: 'GateReviewList',
+    icon: 'Stamp',
+    description: '项目评审记录（门禁/专项评审通用）',
+  },
+  {
+    id: 'safety-tracking',
+    code: '09',
+    name: '功能安全跟踪',
+    category: 'safety_security',
+    apqpPhases: [1, 2, 3, 4, 5],
+    routeName: 'FunctionalSafety',
+    icon: 'Finished',
+    description: '功能安全活动跟踪（ISO 26262:2018）',
+  },
+  {
+    id: 'aspice-tracking',
+    code: '10',
+    name: 'ASPICE 跟踪',
+    category: 'safety_security',
+    apqpPhases: [2, 3, 4],
+    routeName: 'AspiceTracking',
+    icon: 'Notebook',
+    description: 'ASPICE 过程域跟踪（PAM 4.0 + VDA 指引）',
+  },
+  {
+    id: 'security-tracking',
+    code: '11',
+    name: '信息安全跟踪',
+    category: 'safety_security',
+    apqpPhases: [1, 2, 3, 4, 5],
+    routeName: 'Security',
+    icon: 'Lock',
+    description: '信息安全活动跟踪（ISO/SAE 21434 + UN R155）',
+  },
+  {
+    id: 'outsourced-parts',
+    code: '12',
+    name: '外购外协件管控',
+    category: 'process',
+    apqpPhases: [1, 2, 3, 4, 5],
+    routeName: 'SupplierCollab',
+    icon: 'Van',
+    description: '外购外协件开发管控表',
+  },
+  {
+    id: 'procurement-tracking',
+    code: '12B',
+    name: '需求下单到货跟踪',
+    category: 'process',
+    apqpPhases: [3, 4, 5],
+    routeName: 'Procurement',
+    icon: 'ShoppingCart',
+    description: '需求→采购→到货→IQC→入库全过程闭环',
+  },
+  {
+    id: 'ots-review-report',
+    code: '13',
+    name: 'OTS 评审报告',
+    category: 'confirmation',
+    apqpPhases: [4],
+    gateInput: 'G4',
+    routeName: 'OtsList',
+    icon: 'Document',
+    description: 'OTS 认可评审报告（四态结论）',
+  },
+  {
+    id: 'ots-doc-checklist',
+    code: '13A',
+    name: 'OTS 文档检查表',
+    category: 'confirmation',
+    apqpPhases: [4],
+    gateInput: 'G4',
+    routeName: 'OtsDocChecklist',
+    icon: 'FolderChecked',
+    description: 'OTS 文档齐套率检查',
+  },
+  {
+    id: 'risk-management',
+    code: '14',
+    name: '风险管控',
+    category: 'crosscutting',
+    apqpPhases: [1, 2, 3, 4, 5],
+    routeName: 'ProjectRisks',
+    icon: 'CircleClose',
+    description: '风险识别/评估/应对/升级管控',
+  },
+  {
+    id: 'escalation-alarm',
+    code: '15',
+    name: '升级报警单',
+    category: 'crosscutting',
+    apqpPhases: [1, 2, 3, 4, 5],
+    routeName: 'EscalationAlarm',
+    icon: 'Bell',
+    description: '升级报警（里程碑滞后/问题逾期/高风险失控）',
+  },
+] as const;
+
+// 按 APQP 阶段分组
+export const FORMS_BY_PHASE: Record<number, string[]> = {
+  1: ['00', '01', '02', '03', '09', '11', '14', '15'],
+  2: ['03', '09', '10', '11', '12', '14'],
+  3: ['03', '10', '12', '12B', '14'],
+  4: ['03', '04', '05', '10', '12B', '13', '13A'],
+  5: ['03', '06', '07', '12B', '14', '15'],
+};
+
+// 表单间联动关系
+export const FORM_LINKAGES = [
+  { from: '07', to: '15', type: 'trigger', desc: 'A 级问题 → 升级报警单' },
+  { from: '14', to: '15', type: 'trigger', desc: '高风险失控 → 升级报警单' },
+  { from: '12', to: '12B', type: 'reference', desc: '外购外协件 → 需求下单跟踪' },
+  { from: '13', to: '13A', type: 'dependency', desc: 'OTS 评审报告 ← OTS 文档检查表齐套' },
+  { from: '03', to: '04', type: 'condition', desc: 'APQP 检查表 → OTS 申请三条件核查' },
+  { from: '06', to: '07', type: 'reference', desc: '变更申请 → 问题跟踪表登记' },
+] as const;

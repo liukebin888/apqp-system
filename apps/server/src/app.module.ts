@@ -29,6 +29,8 @@ import { KnowledgeModule } from './modules/knowledge/knowledge.module'
 import { SecurityModule } from './modules/security/security.module'
 import { SecurityAuditModule } from './modules/security-audit/security-audit.module'
 import { AnalyticsModule } from './modules/analytics/analytics.module'
+import { AspiceTrackingModule } from './modules/aspice-tracking/aspice-tracking.module'
+import { ChecklistModule } from './modules/checklist/checklist.module'
 
 @Module({
   imports: [
@@ -64,6 +66,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module'
     SecurityModule,
     SecurityAuditModule,
     AnalyticsModule,
+    AspiceTrackingModule,
+    ChecklistModule,
   ],
   providers: [PrismaService],
   exports: [PrismaService],

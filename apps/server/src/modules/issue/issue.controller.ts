@@ -108,7 +108,7 @@ export class IssueController {
     const result = await this.service.findAllIssues({
       projectId, status, issueType, severity, skip: 0, take: 10000,
     })
-    const list = result?.items || result || []
+    const list: any[] = Array.isArray(result) ? result : (result?.items || [])
     const headers = ['编号', '标题', '类型', '严重度', '状态', '责任人', '项目ID', '创建时间']
     const rows = list.map((i: any) => [
       i.code, i.title, i.issueType, i.severity, i.status,

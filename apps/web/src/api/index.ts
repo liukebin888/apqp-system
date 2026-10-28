@@ -248,6 +248,15 @@ export const otsApi = {
     create: (sampleId: number, data: any) => request.post(`/ots/samples/${sampleId}/approvals`, data),
     update: (id: number, data: any) => request.put(`/ots/approvals/${id}`, data),
   },
+  docChecklists: {
+    list: (params?: any) => request.get('/ots/doc-checklists', { params }),
+    get: (id: number) => request.get(`/ots/doc-checklists/${id}`),
+    create: (data: any) => request.post('/ots/doc-checklists', data),
+    init: (projectId: number, otsSampleId?: number) => request.post(`/ots/doc-checklists/init/${projectId}`, null, { params: { otsSampleId } }),
+    updateItem: (itemId: number, data: any) => request.put(`/ots/doc-checklists/items/${itemId}`, data),
+    progress: (projectId: number) => request.get(`/ots/doc-checklists/progress/${projectId}`),
+    delete: (id: number) => request.delete(`/ots/doc-checklists/${id}`),
+  },
 }
 
 export const ppapApi = {
@@ -437,6 +446,7 @@ export const qualityApi = {
   escalation: {
     history: (problemId: number) => request.get(`/quality/problems/${problemId}/escalation-history`),
     manualEscalate: (problemId: number, level: string) => request.put(`/quality/problems/${problemId}/manual-escalate`, { level }),
+    projectHistory: (projectId: number) => request.get('/quality/escalations', { params: { projectId } }),
   },
   ppm: {
     list: (params?: any) => request.get('/quality/ppm-records', { params }),
@@ -589,6 +599,7 @@ export const dashboardApi = {
   warnings: () => request.get('/dashboard/warnings'),
   myTasks: () => request.get('/dashboard/my-tasks'),
   trends: (params?: { months?: number }) => request.get('/dashboard/trends', { params }),
+  processOverview: (projectId: number) => request.get(`/dashboard/process-overview/${projectId}`),
 }
 
 export const safetyApi = {
@@ -896,4 +907,25 @@ export const configApi = {
   delete: (key: string) => request.delete(`/system/config/${key}`),
   batch: (items: Array<{ configKey: string; configValue: string; description?: string }>) =>
     request.post('/system/config/batch', items),
+}
+
+// ==================== APQP 检查表 ====================
+export const checklistApi = {
+  list: (params?: any) => request.get('/checklist', { params }),
+  get: (id: number) => request.get(`/checklist/${id}`),
+  instantiate: (projectId: number) => request.post(`/checklist/instantiate/${projectId}`),
+  updateItem: (itemId: number, data: any) => request.put(`/checklist/items/${itemId}`, data),
+  batchUpdateItems: (checklistId: number, items: any[]) =>
+    request.put(`/checklist/${checklistId}/items/batch`, { items }),
+  progress: (projectId: number) => request.get(`/checklist/progress/${projectId}`),
+}
+
+// ==================== ASPICE 过程跟踪 ====================
+export const aspiceTrackingApi = {
+  list: (params?: any) => request.get('/aspice-tracking', { params }),
+  init: (projectId: number) => request.post(`/aspice-tracking/init/${projectId}`),
+  update: (id: number, data: any) => request.put(`/aspice-tracking/${id}`, data),
+  batchUpdatePractices: (processId: number, practices: any[]) =>
+    request.put(`/aspice-tracking/${processId}/practices/batch`, { practices }),
+  summary: (projectId: number) => request.get(`/aspice-tracking/summary/${projectId}`),
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../../common/services/prisma.service'
 
 @Injectable()
@@ -274,7 +274,7 @@ export class ProcurementService {
     })
 
     if (request.status !== 'approved') {
-      throw new Error('Only approved requests can be converted to orders')
+      throw new BadRequestException('Only approved requests can be converted to orders')
     }
 
     const orderNo = await this.generateOrderNo()

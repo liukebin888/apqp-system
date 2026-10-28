@@ -164,6 +164,123 @@ export class OtsService {
     return this.prisma.otsApproval.update({ where: { id }, data })
   }
 
+  // ==================== OTS 文档检查表 ====================
+
+  async findAllDocChecklists(projectId: number) {
+    return this.prisma.otsDocChecklist.findMany({
+      where: { projectId },
+      include: {
+        createdBy: { select: { id: true, realName: true } },
+        items: {
+          include: {
+            reviewer: { select: { id: true, realName: true } },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
+  async findOneDocChecklist(id: number) {
+    const checklist = await this.prisma.otsDocChecklist.findUnique({
+      where: { id },
+      include: {
+        createdBy: { select: { id: true, realName: true } },
+        items: {
+          include: {
+            reviewer: { select: { id: true, realName: true } },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    })
+    if (!checklist) throw new NotFoundException('OTS 文档检查表不存在')
+    return checklist
+  }
+
+  async createDocChecklist(data: any, userId: number) {
+    return this.prisma.otsDocChecklist.create({
+      data: {
+        ...data,
+        createdById: userId,
+      },
+    })
+  }
+
+  async initStandardDocChecklist(projectId: number, otsSampleId: number | undefined, userId: number) {
+    const templateItems = [
+      { category: 'structural', docName: '零件图纸 / 3D 模型（含公差标注）' },
+      { category: 'structural', docName: '公差分析与堆叠报告（GD&T）' },
+      { category: 'structural', docName: '材料清单（结构部分）与材料规格书' },
+      { category: 'structural', docName: '结构 DFMEA' },
+      { category: 'hardware', docName: '原理图 / Schema' },
+      { category: 'hardware', docName: 'PCB Layout 文件' },
+      { category: 'hardware', docName: '硬件 DFMEA' },
+      { category: 'hardware', docName: '硬件 BOM' },
+      { category: 'software', docName: '软件架构文档' },
+      { category: 'software', docName: '软件详细设计文档' },
+      { category: 'software', docName: '软件版本说明 / Release Notes' },
+      { category: 'test', docName: 'DV 试验计划（DVP&R）' },
+      { category: 'test', docName: 'DV 试验报告' },
+      { category: 'test', docName: '全尺寸检验报告' },
+      { category: 'material', docName: '材质证明 / 材料合格证' },
+      { category: 'material', docName: '材料规格书（Material Specification）' },
+      { category: 'process', docName: '过程流程图' },
+      { category: 'process', docName: 'PFMEA' },
+      { category: 'process', docName: '控制计划（Control Plan）' },
+      { category: 'quality', docName: 'MSA 研究报告' },
+      { category: 'quality', docName: '初始过程能力研究（Ppk/Cpk）' },
+      { category: 'safety', docName: '功能安全文档包（Safety Case / FSC / TSR）' },
+      { category: 'security', docName: 'TARA 报告 / 网络安全概念' },
+      { category: 'security', docName: 'SBOM（软件物料清单）' },
+    ]
+
+    return this.prisma.otsDocChecklist.create({
+      data: {
+        projectId,
+        otsSampleId,
+        name: 'OTS 文档检查表',
+        createdById: userId,
+        items: {
+          create: templateItems.map((item, idx) => ({
+            sortOrder: idx + 1,
+            docCategory: item.category,
+            docName: item.docName,
+          })),
+        },
+      },
+      include: { items: true },
+    })
+  }
+
+  async updateDocChecklistItem(id: number, data: any) {
+    return this.prisma.otsDocChecklistItem.update({ where: { id }, data })
+  }
+
+  async getDocChecklistProgress(projectId: number) {
+    const checklists = await this.prisma.otsDocChecklist.findMany({
+      where: { projectId },
+      include: { items: true },
+    })
+
+    let total = 0
+    let completed = 0
+    for (const cl of checklists) {
+      total += cl.items.length
+      completed += cl.items.filter(i => i.status === 'approved' || i.status === 'reviewed').length
+    }
+
+    return { total, completed, percentage: total > 0 ? (completed / total) * 100 : 0 }
+  }
+
+  async deleteDocChecklist(id: number) {
+    const checklist = await this.prisma.otsDocChecklist.findUnique({ where: { id } })
+    if (!checklist) throw new NotFoundException('OTS 文档检查表不存在')
+    await this.prisma.otsDocChecklist.delete({ where: { id } })
+    return { message: '删除成功' }
+  }
+
   // ==================== Code Generators ====================
 
   private async generateSampleCode(): Promise<string> {

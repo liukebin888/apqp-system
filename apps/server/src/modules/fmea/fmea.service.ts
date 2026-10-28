@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../../common/services/prisma.service'
 
 const AP_MATRIX: Record<number, Record<number, Record<number, string>>> = {
@@ -150,7 +150,7 @@ export class FmeaService {
       where: { id },
       include: { items: { include: { children: true } } },
     })
-    if (!source) throw new Error('DFMEA not found')
+    if (!source) throw new NotFoundException('DFMEA not found')
     const fmeaNo = await this.generateNo('DF', 'dfmea_seq')
     const newDfmea = await this.prisma.fmeaDfmea.create({
       data: {
@@ -445,7 +445,7 @@ export class FmeaService {
       where: { id: controlPlanId },
       include: { project: true },
     })
-    if (!cp) throw new Error('Control Plan not found')
+    if (!cp) throw new NotFoundException('Control Plan not found')
     const pfmeas = await this.prisma.fmeaPfmea.findMany({
       where: { projectId: cp.projectId, status: { in: ['approved', 'released'] } },
       include: {
@@ -512,7 +512,7 @@ export class FmeaService {
 
   async getSpecialCharTraceability(id: number) {
     const sc = await this.prisma.fmeaSpecialCharacteristic.findUnique({ where: { id } })
-    if (!sc) throw new Error('Special characteristic not found')
+    if (!sc) throw new NotFoundException('Special characteristic not found')
     const [dfmeaItems, pfmeaItems, cpItems] = await Promise.all([
       this.prisma.fmeaDfmeaItem.findMany({
         where: { specialCharId: id },
@@ -591,7 +591,7 @@ export class FmeaService {
       where: { id: studyId },
       include: { dataPoints: { orderBy: { subgroupNo: 'asc' } } },
     })
-    if (!study || study.dataPoints.length === 0) throw new Error('No data points')
+    if (!study || study.dataPoints.length === 0) throw new NotFoundException('No data points')
 
     const points = study.dataPoints
     const allValues: number[] = []
@@ -603,7 +603,7 @@ export class FmeaService {
         allValues.push(Number(dp.subgroupMean))
       }
     }
-    if (allValues.length === 0) throw new Error('No measurement values')
+    if (allValues.length === 0) throw new NotFoundException('No measurement values')
 
     const n = allValues.length
     const mean = allValues.reduce((a, b) => a + b, 0) / n
@@ -688,7 +688,7 @@ export class FmeaService {
       where: { id: studyId },
       include: { dataPoints: { orderBy: { subgroupNo: 'asc' } } },
     })
-    if (!study) throw new Error('Study not found')
+    if (!study) throw new NotFoundException('Study not found')
     return {
       study: {
         chartType: study.chartType,
@@ -773,7 +773,7 @@ export class FmeaService {
       where: { id: studyId },
       include: { measurements: { orderBy: [{ partId: 'asc' }, { operatorId: 'asc' }, { trialNo: 'asc' }] } },
     })
-    if (!study || study.measurements.length === 0) throw new Error('No measurements')
+    if (!study || study.measurements.length === 0) throw new NotFoundException('No measurements')
 
     const k = study.numOperators
     const n = study.numParts

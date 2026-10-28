@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../../../common/services/prisma.service'
 
 @Injectable()
@@ -31,9 +31,9 @@ export class OrganizationService {
 
   async delete(id: number) {
     const children = await this.prisma.sysDepartment.count({ where: { parentId: id } })
-    if (children > 0) throw new Error('该部门下有子部门，无法删除')
+    if (children > 0) throw new BadRequestException('该部门下有子部门，无法删除')
     const users = await this.prisma.sysUser.count({ where: { departmentId: id } })
-    if (users > 0) throw new Error('该部门下有用户，无法删除')
+    if (users > 0) throw new BadRequestException('该部门下有用户，无法删除')
     return this.prisma.sysDepartment.delete({ where: { id } })
   }
 }

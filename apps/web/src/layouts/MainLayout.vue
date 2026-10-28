@@ -119,6 +119,11 @@
           <template #title>数据分析</template>
         </el-menu-item>
 
+        <el-menu-item index="/form-center">
+          <el-icon><Tickets /></el-icon>
+          <template #title>表单中心</template>
+        </el-menu-item>
+
         <el-sub-menu index="master-data">
           <template #title>
             <el-icon><Grid /></el-icon>

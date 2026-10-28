@@ -21,7 +21,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       const res = exception.getResponse()
       message = typeof res === 'string' ? res : (res as any).message || message
     } else if (exception instanceof Error) {
-      message = exception.message
+      if (process.env.NODE_ENV === 'development') {
+        message = exception.message
+      }
+      console.error('[Unhandled Exception]', exception)
     }
 
     response.status(status).json({

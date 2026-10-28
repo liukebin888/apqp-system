@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../../common/services/prisma.service'
 
 @Injectable()
@@ -80,7 +80,7 @@ export class CostService {
   async updateEstimate(id: number, data: { versionLabel?: string; remarks?: string }) {
     const estimate = await this.prisma.costEstimate.findUniqueOrThrow({ where: { id } })
     if (estimate.status !== 'draft') {
-      throw new Error('只能修改草稿状态的估算')
+      throw new BadRequestException('只能修改草稿状态的估算')
     }
     return this.prisma.costEstimate.update({ where: { id }, data })
   }
@@ -88,7 +88,7 @@ export class CostService {
   async deleteEstimate(id: number) {
     const estimate = await this.prisma.costEstimate.findUniqueOrThrow({ where: { id } })
     if (estimate.status !== 'draft') {
-      throw new Error('只能删除草稿状态的估算')
+      throw new BadRequestException('只能删除草稿状态的估算')
     }
     return this.prisma.costEstimate.delete({ where: { id } })
   }
@@ -150,7 +150,7 @@ export class CostService {
     })
 
     if (estimate.status !== 'approved') {
-      throw new Error('只能发布已批准的估算')
+      throw new BadRequestException('只能发布已批准的估算')
     }
 
     const Decimal = require('@prisma/client').Prisma.Decimal
@@ -394,7 +394,7 @@ export class CostService {
   async deleteBudget(id: number) {
     const cost = await this.prisma.prjCost.findUniqueOrThrow({ where: { id } })
     if (cost.status !== 'draft') {
-      throw new Error('只能删除草稿状态的预算')
+      throw new BadRequestException('只能删除草稿状态的预算')
     }
     return this.prisma.prjCost.delete({ where: { id } })
   }
@@ -447,7 +447,7 @@ export class CostService {
     })
 
     if (adjustment.status !== 'pending') {
-      throw new Error('只能审批待审批状态的调整')
+      throw new BadRequestException('只能审批待审批状态的调整')
     }
 
     await this.prisma.prjCost.update({

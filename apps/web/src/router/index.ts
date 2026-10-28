@@ -305,6 +305,43 @@ const router = createRouter({
           component: () => import('@/views/portal/NotificationCenter.vue'),
           meta: { title: '消息中心', icon: 'Bell', group: 'portal' },
         },
+        // ---- 表单中心 ----
+        {
+          path: 'form-center',
+          name: 'FormCenter',
+          component: () => import('@/views/form-center/FormCenter.vue'),
+          meta: { title: '表单中心', icon: 'Tickets', group: 'form-center' },
+        },
+        {
+          path: 'form-center/process-overview/:projectId',
+          name: 'ProcessOverview',
+          component: () => import('@/views/form-center/ProcessOverview.vue'),
+          meta: { title: '流程总览', hidden: true },
+        },
+        {
+          path: 'form-center/apqp-checklist/:projectId',
+          name: 'ApqpChecklist',
+          component: () => import('@/views/form-center/ApqpChecklistView.vue'),
+          meta: { title: 'APQP检查表', hidden: true },
+        },
+        {
+          path: 'form-center/aspice-tracking/:projectId',
+          name: 'AspiceTracking',
+          component: () => import('@/views/form-center/AspiceTrackingView.vue'),
+          meta: { title: 'ASPICE跟踪', hidden: true },
+        },
+        {
+          path: 'form-center/ots-doc-checklist/:projectId',
+          name: 'OtsDocChecklist',
+          component: () => import('@/views/form-center/OtsDocChecklistView.vue'),
+          meta: { title: 'OTS文档检查表', hidden: true },
+        },
+        {
+          path: 'form-center/escalation-alarm/:projectId',
+          name: 'EscalationAlarm',
+          component: () => import('@/views/form-center/EscalationAlarmView.vue'),
+          meta: { title: '升级报警单', hidden: true },
+        },
       ],
     },
   ],

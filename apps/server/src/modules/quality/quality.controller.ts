@@ -370,8 +370,23 @@ export class QualityController {
 
   // ==================== Escalation Endpoints ====================
 
+  @Get('escalations')
+  async getProjectEscalations(@Query('projectId') projectId: string) {
+    if (!projectId || isNaN(+projectId)) {
+      return { code: 400, data: [], message: '缺少有效的 projectId 参数' }
+    }
+    return {
+      code: 0,
+      data: await this.service.getEscalationsByProject(+projectId),
+      message: 'success',
+    }
+  }
+
   @Get('problems/:id/escalation-history')
   async getEscalationHistory(@Param('id') id: string) {
+    if (!id || isNaN(+id)) {
+      return { code: 400, data: [], message: '无效的问题ID' }
+    }
     return {
       code: 0,
       data: await this.service.getEscalationHistory(+id),
@@ -385,6 +400,9 @@ export class QualityController {
     @Body() body: { level: string },
     @Req() req: any,
   ) {
+    if (!id || isNaN(+id)) {
+      return { code: 400, data: null, message: '无效的问题ID' }
+    }
     const userId = req.user?.userId || 1
     return {
       code: 0,

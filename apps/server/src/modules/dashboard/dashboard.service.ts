@@ -446,4 +446,104 @@ export class DashboardService {
 
     return { projectTrends, qualityTrends, costTrends, changeTrends }
   }
+
+  async getProcessOverview(projectId: number) {
+    const project = await this.prisma.prjProject.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        projectName: true,
+        apqpPhase: true,
+        grdLevel: true,
+        projectGrade: true,
+        startDate: true,
+        endDate: true,
+      },
+    })
+
+    if (!project) return null
+
+    const [gateReviews, milestones, checklistProgress, aspiceSummary, otsDocProgress] = await Promise.all([
+      this.prisma.gateReview.findMany({
+        where: { projectId },
+        select: { gateType: true, status: true, plannedDate: true },
+        orderBy: { plannedDate: 'asc' },
+      }),
+      this.prisma.prjMilestone.findMany({
+        where: { projectId },
+        select: { milestoneType: true, status: true, plannedDate: true, actualDate: true },
+        orderBy: { plannedDate: 'asc' },
+      }),
+      this.prisma.apqpChecklist.findMany({
+        where: { projectId },
+        select: { phase: true, status: true, completedPct: true },
+      }),
+      this.prisma.aspiceProcess.findMany({
+        where: { projectId },
+        select: { processGroup: true, processId: true, achievedLevel: true, assessmentStatus: true },
+      }),
+      this.prisma.otsDocChecklist.findMany({
+        where: { projectId },
+        select: { status: true, completedPct: true },
+      }),
+    ])
+
+    const phases = [
+      { phase: 1, name: '计划定义', gate: 'G1' },
+      { phase: 2, name: '产品设计开发', gate: 'G2' },
+      { phase: 3, name: '过程设计开发', gate: 'G3' },
+      { phase: 4, name: '产品与过程确认', gate: 'G4' },
+      { phase: 5, name: '量产与反馈', gate: 'G5' },
+    ]
+
+    const phaseStatus = phases.map(p => {
+      const gateReview = gateReviews.find(g => g.gateType === `gate${p.phase}`)
+      const phaseMilestones = milestones.filter(m => {
+        if (p.phase === 1) return m.milestoneType === 'gate1'
+        if (p.phase === 2) return m.milestoneType === 'gate2'
+        if (p.phase === 3) return m.milestoneType === 'gate3'
+        if (p.phase === 4) return m.milestoneType === 'gate4'
+        return m.milestoneType === 'gate5'
+      })
+      const phaseChecklists = checklistProgress.filter(c => c.phase === `phase${p.phase}`)
+
+      return {
+        ...p,
+        gateStatus: gateReview?.status || 'not_started',
+        gateDate: gateReview?.plannedDate || null,
+        milestonesCompleted: phaseMilestones.filter(m => m.status === 'completed').length,
+        milestonesTotal: phaseMilestones.length,
+        checklistProgress: phaseChecklists.length > 0
+          ? phaseChecklists.reduce((sum, c) => sum + Number(c.completedPct), 0) / phaseChecklists.length
+          : 0,
+      }
+    })
+
+    const aspiceByGroup: Record<string, { total: number; assessed: number; avgLevel: number }> = {}
+    for (const a of aspiceSummary) {
+      if (!aspiceByGroup[a.processGroup]) {
+        aspiceByGroup[a.processGroup] = { total: 0, assessed: 0, avgLevel: 0 }
+      }
+      aspiceByGroup[a.processGroup].total++
+      if (a.assessmentStatus === 'assessed') {
+        aspiceByGroup[a.processGroup].assessed++
+        aspiceByGroup[a.processGroup].avgLevel += a.achievedLevel
+      }
+    }
+    for (const g of Object.values(aspiceByGroup)) {
+      g.avgLevel = g.assessed > 0 ? g.avgLevel / g.assessed : 0
+    }
+
+    const otsDocCompletion = otsDocProgress.length > 0
+      ? otsDocProgress.reduce((sum, c) => sum + Number(c.completedPct), 0) / otsDocProgress.length
+      : 0
+
+    return {
+      project,
+      phases: phaseStatus,
+      aspiceByGroup,
+      otsDocCompletion,
+      currentPhase: project.apqpPhase,
+    }
+  }
 }

@@ -688,6 +688,17 @@ export class QualityService {
     })
   }
 
+  async getEscalationsByProject(projectId: number) {
+    return this.prisma.qualityEscalationHistory.findMany({
+      where: { problem: { projectId } },
+      include: {
+        problem: { select: { id: true, problemNo: true, title: true, status: true } },
+        triggeredByUser: { select: { id: true, realName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
   async manualEscalate(problemId: number, userId: number, level: string) {
     const problem = await this.prisma.qualityProblem.findUniqueOrThrow({
       where: { id: problemId },

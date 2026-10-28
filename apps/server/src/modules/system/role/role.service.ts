@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../../../common/services/prisma.service'
 
 @Injectable()
@@ -44,7 +44,7 @@ export class RoleService {
   async update(id: number, data: { name?: string; description?: string; permissionIds?: number[] }) {
     const role = await this.prisma.sysRole.findUnique({ where: { id } })
     if (!role) throw new NotFoundException('角色不存在')
-    if (role.isSystem) throw new Error('系统内置角色不可修改')
+    if (role.isSystem) throw new BadRequestException('系统内置角色不可修改')
 
     const { permissionIds, ...roleData } = data
 
@@ -63,10 +63,10 @@ export class RoleService {
   async delete(id: number) {
     const role = await this.prisma.sysRole.findUnique({ where: { id } })
     if (!role) throw new NotFoundException('角色不存在')
-    if (role.isSystem) throw new Error('系统内置角色不可删除')
+    if (role.isSystem) throw new BadRequestException('系统内置角色不可删除')
 
     const userCount = await this.prisma.sysUserRole.count({ where: { roleId: id } })
-    if (userCount > 0) throw new Error('该角色下有关联用户，无法删除')
+    if (userCount > 0) throw new BadRequestException('该角色下有关联用户，无法删除')
 
     await this.prisma.sysRolePermission.deleteMany({ where: { roleId: id } })
     await this.prisma.sysRole.delete({ where: { id } })

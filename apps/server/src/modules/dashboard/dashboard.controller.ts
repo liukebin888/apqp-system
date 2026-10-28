@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common'
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { AuthGuard } from '@nestjs/passport'
 import { DashboardService } from './dashboard.service'
@@ -34,5 +34,11 @@ export class DashboardController {
   @ApiQuery({ name: 'months', required: false, type: Number })
   async getTrends(@Query('months') months?: number) {
     return this.service.getTrends(months || 6)
+  }
+
+  @Get('process-overview/:projectId')
+  @ApiOperation({ summary: '流程总览 - APQP五阶段聚合' })
+  async getProcessOverview(@Param('projectId') projectId: string) {
+    return { code: 0, data: await this.service.getProcessOverview(+projectId), message: 'success' }
   }
 }
